@@ -158,5 +158,73 @@ Errors contain fixed messages without credentials or upstream response bodies.
 Run all offline tests (HTTP requests to Nessie are mocked):
 
 ```sh
-python -m unittest test_app test_financial_analyzer test_nessie_service
+python -m unittest test_app test_financial_analyzer test_nessie_service test_scenario_engine
 ```
+
+## Hire employee simulation
+
+`ScenarioEngine.simulate_hire(analysis, hourly_wage, hours_per_week, months=6)`
+uses the existing analyzer output and performs no API calls. The monthly added
+wage cost is `hourly_wage * hours_per_week * 52 / 12`. Taxes, benefits, hiring
+costs, revenue growth, and seasonality are not modeled.
+
+The baseline is average monthly net cash flow across the entire supplied
+calendar history: total monthly revenue minus total monthly expenses, divided
+by the number of calendar months from the earliest through the latest entry.
+Missing months count as zero. History may contain partial months; the engine
+cannot identify those from the analyzer output.
+
+Both projections start from `summary.cash_balance`. Each entry shows an
+end-of-month balance after adding baseline cash flow (or baseline minus wage
+cost) for that many months. The first projection month follows the latest
+historical month, making repeated simulations deterministic even if the
+system date changes. Stale history therefore produces projections anchored to
+that history, rather than to today's date. Decimal calculations retain precision
+until results are rounded to two decimal places.
+
+Negative/nonfinite wages or hours, noninteger/nonpositive months, missing cash
+balance, malformed monthly records, and completely empty monthly history raise
+`ValueError`. Zero wages or hours and explicit zero-valued monthly history are
+valid. The API returns HTTP 422 for invalid inputs or insufficient scenario
+history, and keeps the existing sanitized Nessie error handling.
+
+```sh
+curl -X POST http://127.0.0.1:8000/businesses/CUSTOMER_ID/scenarios/hire \
+  -H 'Content-Type: application/json' \
+  -d '{"hourly_wage":18,"hours_per_week":30,"months":6}'
+```
+
+The request model uses [Pydantic field constraints](https://docs.pydantic.dev/latest/concepts/fields/)
+for nonnegative finite numbers and positive integer months (default six).
+Local Vite CORS permits GET and POST. The endpoint retrieves the financial
+records through the shared analysis-loading helper, calls `FinancialAnalyzer`,
+and returns the `ScenarioEngine` result without modifying Nessie data.
+
+```sh
+python -m unittest test_scenario_engine test_app test_financial_analyzer test_nessie_service
+```
+
+## Frontend dashboard
+
+The complete React/TypeScript dashboard lives in `frontend/`. See
+[frontend setup and usage](frontend/README.md) for configuration, build, and tests.
+
+Run FastAPI from the repository root:
+
+```sh
+source .venv/bin/activate
+uvicorn backend.app:app --reload
+```
+
+In a second terminal:
+
+```sh
+cd frontend
+npm ci
+cp .env.example .env.local
+npm run dev
+```
+
+Open `http://127.0.0.1:5173`. The browser uses only the FastAPI backend.
+Businesses and all financial results come from the backend. Empty customer
+lists show an empty state; hiring projections need dated monthly history.

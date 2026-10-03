@@ -64,7 +64,9 @@ class ScenarioEngine:
             if not isinstance(entry, Mapping):
                 raise ValueError(f"Invalid entry in {field}")
             month = entry.get("month")
-            if not isinstance(month, str) or len(month) != 7 or month[4] != "-":
+            if (not isinstance(month, str) or len(month) != 7 or month[4] != "-"
+                    or not month[:4].isascii() or not month[:4].isdigit()
+                    or not month[5:].isascii() or not month[5:].isdigit()):
                 raise ValueError(f"Invalid month in {field}; expected YYYY-MM")
             try:
                 year, month_number = int(month[:4]), int(month[5:])
