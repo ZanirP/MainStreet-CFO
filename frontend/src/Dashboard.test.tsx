@@ -217,4 +217,70 @@ describe("dashboard vertical slice", () => {
       expect(screen.getAllByText("One-time cash reduction")[1]).toBeTruthy();
     }
   });
+  it("surfaces supplied signals and sends optional stress requests", async () => {
+    setup();
+    fetchMock.mockImplementation(async (url, options) => {
+      if (String(url).endsWith("/businesses"))
+        return json([{ _id: "arbor", first_name: "Arbor" }]);
+      if (options?.method === "POST")
+        return json({
+          ...scenario,
+          stress_test: {
+            assumptions: {
+              revenue_reduction_percent: 10,
+              expense_increase_percent: 10,
+              basis: "Historical averages; scenario costs unchanged.",
+              average_monthly_revenue: 10000,
+              average_monthly_expenses: 3000,
+              stressed_monthly_revenue: 9000,
+              stressed_monthly_expenses: 3300,
+            },
+            baseline_monthly_cash_flow: 5700,
+            projected_monthly_cash_flow: 3360,
+            cash_projection: [
+              { month: "2026-11", baseline: 29700, scenario: 27360 },
+            ],
+          },
+        });
+      return json({
+        ...analysis,
+        signals: [
+          {
+            id: "expense_growth",
+            level: "caution",
+            title: "Expenses are growing faster than revenue",
+            explanation: "Revenue changed 10% and expenses changed 40%.",
+            value: 30,
+            unit: "percentage_points",
+          },
+        ],
+      });
+    });
+    const user = userEvent.setup();
+    render(<Dashboard />);
+    expect(
+      await screen.findByText("Expenses are growing faster than revenue"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("Revenue changed 10% and expenses changed 40%."),
+    ).toBeTruthy();
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(
+      screen.getByRole("button", { name: "See the cash impact" }),
+    );
+    expect(await screen.findByText("Conservative stress case")).toBeTruthy();
+    expect(
+      screen.getByText("2026-11 baseline 31000 scenario 28660"),
+    ).toBeTruthy();
+    expect(
+      screen.getByText("2026-11 baseline 29700 scenario 27360"),
+    ).toBeTruthy();
+    const call = fetchMock.mock.calls.at(-1)!;
+    expect(JSON.parse(String(call[1]?.body))).toEqual({
+      hourly_wage: 18,
+      hours_per_week: 30,
+      months: 6,
+      stress_test: true,
+    });
+  });
 });

@@ -16,6 +16,7 @@ import type {
 import { scenarioLabel } from "../types";
 import { currency, monthLabel } from "../format";
 import { ErrorNotice } from "./Shared";
+import DecisionLimits from "./DecisionLimits";
 import { ScenarioProjectionChart } from "./Charts";
 export function HireEmployeeForm({
   busy,
@@ -199,6 +200,7 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
   const [kind, setKind] = useState<ScenarioKind>("hire_employee");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [stress, setStress] = useState(false);
   const [edited, setEdited] = useState(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
@@ -210,13 +212,18 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
     setError("");
     setResult(null);
     setEdited(false);
+    const requestInputs = stress ? { ...inputs, stress_test: true } : inputs;
     try {
       const next =
         kind === "hire_employee"
-          ? await api.hire(businessId, inputs as HireInputs, request.signal)
+          ? await api.hire(
+              businessId,
+              requestInputs as HireInputs,
+              request.signal,
+            )
           : await api[
               kind === "equipment_purchase" ? "equipment" : "withdrawal"
-            ](businessId, inputs as OneTimeInputs, request.signal);
+            ](businessId, requestInputs as OneTimeInputs, request.signal);
       if (!request.signal.aborted) setResult(next);
     } catch (e) {
       if (!request.signal.aborted)
@@ -299,6 +306,21 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
               onEdit={() => setEdited(true)}
             />
           )}
+          <label className="stress-option">
+            <input
+              type="checkbox"
+              checked={stress}
+              disabled={busy}
+              onChange={(e) => {
+                setStress(e.target.checked);
+                setEdited(true);
+              }}
+            />
+            <span>
+              Include a conservative stress test
+              <small>10% lower revenue · 10% higher expenses</small>
+            </span>
+          </label>
           <p className="footnote">
             {kind === "hire_employee"
               ? "Wages only. Taxes, benefits, and potential revenue growth aren’t included."
@@ -400,6 +422,68 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
                 </div>
               </div>
               <ScenarioProjectionChart result={result} />
+              {result.breaking_point && (
+                <DecisionLimits
+                  limits={result.breaking_point}
+                  kind={result.scenario}
+                />
+              )}
+              {result.stress_test && (
+                <section className="stress-result">
+                  <h3>Conservative stress case</h3>
+                  <p className="footnote">
+                    Positive average revenue reduced by{" "}
+                    {result.stress_test.assumptions.revenue_reduction_percent}%;
+                    positive average expenses increased by{" "}
+                    {result.stress_test.assumptions.expense_increase_percent}%.{" "}
+                    {result.stress_test.assumptions.basis}
+                  </p>
+                  <p className="stress-figures">
+                    Revenue:{" "}
+                    {currency(
+                      result.stress_test.assumptions.average_monthly_revenue,
+                    )}{" "}
+                    →{" "}
+                    {currency(
+                      result.stress_test.assumptions.stressed_monthly_revenue,
+                    )}{" "}
+                    / month.
+                    <br />
+                    Expenses:{" "}
+                    {currency(
+                      result.stress_test.assumptions.average_monthly_expenses,
+                    )}{" "}
+                    →{" "}
+                    {currency(
+                      result.stress_test.assumptions.stressed_monthly_expenses,
+                    )}{" "}
+                    / month.
+                  </p>
+                  <p className="stress-figures">
+                    Stressed baseline cash flow:{" "}
+                    <strong>
+                      {currency(result.stress_test.baseline_monthly_cash_flow)}
+                    </strong>{" "}
+                    / month. With this decision:{" "}
+                    <strong>
+                      {currency(result.stress_test.projected_monthly_cash_flow)}
+                    </strong>{" "}
+                    / month.
+                  </p>
+                  <ScenarioProjectionChart
+                    result={{ ...result, ...result.stress_test }}
+                    stressCase
+                  />
+                  {result.stress_test.breaking_point && (
+                    <DecisionLimits
+                      limits={result.stress_test.breaking_point}
+                      kind={result.scenario}
+                      stressCase
+                    />
+                  )}
+                </section>
+              )}
+
               {last && (
                 <div className="projection-takeaway">
                   By {monthLabel(last.month)}, projected cash{" "}

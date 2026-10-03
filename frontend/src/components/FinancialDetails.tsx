@@ -91,9 +91,19 @@ export function FinancialHealth({ analysis }: { analysis: Analysis }) {
         <HeartPulse size={21} className="muted" />
       </div>
       <div className="health-list">
-        {checks.map((c) => (
+        {(analysis.signals?.length
+          ? analysis.signals.map((signal) => ({
+              good: signal.level === "positive",
+              neutral: signal.level === "neutral",
+              title: signal.title,
+              text: signal.explanation,
+            }))
+          : checks.map((c) => ({ ...c, neutral: false }))
+        ).map((c) => (
           <div className="health-item" key={c.title}>
-            <span className={`health-icon ${c.good ? "good" : "caution"}`}>
+            <span
+              className={`health-icon ${c.neutral ? "neutral" : c.good ? "good" : "caution"}`}
+            >
               {c.good ? <Check size={16} /> : <CircleAlert size={16} />}
             </span>
             <div>

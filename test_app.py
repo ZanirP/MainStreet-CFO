@@ -146,6 +146,28 @@ class AppTests(unittest.TestCase):
             self.assertNotIn("secret", response.text)
             self.service.get_customer_accounts.side_effect = None
 
+    def test_stress_option_on_all_scenarios(self):
+        self.service.get_customer_accounts.return_value = [{"_id": "a", "balance": 24000}]
+        self.service.get_deposits.return_value = [{"amount": 10000, "transaction_date": "2026-10-01"}]
+        self.service.get_purchases.return_value = [{"amount": 3000, "purchase_date": "2026-10-02"}]
+        self.service.get_bills.return_value = []
+        for route in ("hire", "equipment", "withdrawal"):
+            body = {"hourly_wage": 18, "hours_per_week": 30} if route == "hire" else {"amount": 5000}
+            path = f"/businesses/c/scenarios/{route}"
+            default = self.client.post(path, json=body).json()
+            self.assertNotIn("stress_test", default)
+            response = self.client.post(path, json={**body, "stress_test": True})
+            self.assertEqual(response.status_code, 200)
+            result = response.json()
+            self.assertEqual(result["cash_projection"], default["cash_projection"])
+            self.assertEqual(result["stress_test"]["baseline_monthly_cash_flow"], 5700)
+            self.assertIn("breaking_point", result)
+            self.assertIn("breaking_point", result["stress_test"])
+            self.assertIn("negative_within_horizon", result["breaking_point"])
+            self.assertEqual(result["stress_test"]["assumptions"]["revenue_reduction_percent"], 10)
+            self.assertEqual(self.client.post(path, json={**body, "stress_test": "true"}).status_code, 422)
+        self.assertEqual(len(self.client.get("/businesses/c/analysis").json()["signals"]), 5)
+
 
 if __name__ == "__main__":
     unittest.main()

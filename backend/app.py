@@ -28,6 +28,7 @@ class HireScenarioRequest(BaseModel):
     hourly_wage: float = Field(ge=0, allow_inf_nan=False, strict=True)
     hours_per_week: float = Field(ge=0, allow_inf_nan=False, strict=True)
     months: int = Field(default=6, gt=0, strict=True)
+    stress_test: bool = Field(default=False, strict=True)
 
 
 def get_nessie_service() -> NessieService:
@@ -107,6 +108,7 @@ def hire_scenario(
 class OneTimeScenarioRequest(BaseModel):
     amount: float = Field(ge=0, allow_inf_nan=False, strict=True)
     months: int = Field(default=6, gt=0, strict=True)
+    stress_test: bool = Field(default=False, strict=True)
 
 
 def _one_time_scenario(customer_id: str, inputs: OneTimeScenarioRequest,

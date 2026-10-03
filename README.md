@@ -315,3 +315,76 @@ npm test
 npm run test:e2e
 npm run build
 ```
+
+## Financial signals and conservative stress case
+
+Analysis now includes a `signals` array. Each signal contains an `id`, `level`
+(`positive`, `caution`, or `neutral`), `title`, `explanation`, `value`, and `unit`.
+The dashboard displays these in its financial-health panel, with caution signals
+first. Calculations use only the analyzer's existing totals and monthly series:
+
+- Revenue and expense changes compare the latest two calendar months. Missing
+  history or an undefined percentage is explained as unavailable.
+- Expenses growing faster than revenue is flagged only when expense growth is
+  positive and exceeds the comparable revenue growth rate.
+- Recurring obligations sum listed recurring bills once, divided by positive
+  cash as a percentage. This is not an inferred monthly payment schedule.
+- Cash coverage divides nonnegative cash by average dated monthly expenses;
+  below one month is flagged. It assumes no new revenue and is not a runway
+  forecast. Nonpositive average expenses make coverage unavailable.
+
+Calendar gaps count as zero, and the latest recorded month may be partial.
+Unavailable ratios use `null`; missing data never produces a positive signal.
+
+All three scenario endpoints accept optional `"stress_test": true`. Omit it or
+send `false` to retain the existing response and default projection unchanged.
+The frontend checkbox adds a separate conservative comparison underneath the
+normal chart, reusing the same chart component.
+
+```json
+{"amount":5000,"months":6,"stress_test":true}
+```
+
+The conservative case lowers positive average monthly revenue by 10% and raises
+positive average monthly expenses by 10%, using the same complete historical
+calendar span as the normal scenario. Nonpositive signed averages remain
+unchanged so credits cannot accidentally improve the stress projection. Hiring
+wages and one-time cash reductions remain unchanged. Starting cash and month
+labels are identical to the normal projection.
+
+The response adds `stress_test` containing `assumptions` (percentages, source
+averages, stressed amounts, and the calculation basis), stressed baseline and
+scenario monthly cash flows, and `cash_projection`. Both the assumptions and
+stressed figures are visible in the frontend. This is an illustrative stress
+case, not a forecast probability or a guarantee.
+
+## Scenario breaking points
+
+All three scenario responses include `breaking_point`; an enabled `stress_test`
+includes its own limits using stressed revenue and expenses. Existing projections
+remain unchanged. The dashboard displays these under **Breaking Point**.
+
+Hiring limits use the same historical monthly averages as the projection:
+
+- Required monthly revenue = operating expenses + monthly employee cost.
+- Maximum employee cost = revenue − operating expenses. A negative baseline
+  returns `null` because even zero additional cost cannot break even.
+- Maximum hourly wage = maximum employee cost × 12 / (weekly hours × 52).
+  Zero weekly hours produces no finite wage ceiling (`null`). Maximums round
+  down to cents; required revenue rounds up.
+
+For equipment and withdrawals, the explicitly labeled buffer assumption is one
+month of positive average operating expenses. The maximum one-time amount keeps
+that buffer both immediately after the decision and throughout the chosen horizon:
+`cash + min(0, baseline_monthly_cash_flow × months) − buffer`. A negative capacity
+returns `null` (the buffer is already unattainable). This illustrative assumption
+is not a universal definition of a safe decision.
+
+Runway is cash after the decision divided by net monthly burn. Nondepleting cash
+returns `null`; an immediate shortfall returns zero. First negative end-of-month
+cash is at `floor(runway) + 1`, since zero is not negative. Month index zero means
+an immediate shortfall before monthly cash flow and has no calendar date. The
+first-negative point may extend beyond the selected horizon, using the same
+constant-flow assumption. `negative_within_horizon` includes immediate shortfalls,
+even if subsequent revenue restores cash. These limits are model thresholds,
+not guarantees or financial advice.

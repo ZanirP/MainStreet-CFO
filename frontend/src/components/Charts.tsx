@@ -154,21 +154,24 @@ export function CashFlowChart({ analysis }: { analysis: Analysis }) {
 }
 export function ScenarioProjectionChart({
   result,
+  stressCase = false,
 }: {
   result: ScenarioResult;
+  stressCase?: boolean;
 }) {
-  const label = scenarioLabel(result.scenario);
+  const label = `${stressCase ? "Stressed · " : ""}${scenarioLabel(result.scenario)}`;
+  const baselineLabel = stressCase ? "Stressed baseline" : "Baseline";
   return (
     <>
       <div className="panel-heading projection-heading">
         <div>
-          <h3>Your cash, with and without the hire</h3>
+          <h3>Your cash, with and without this decision</h3>
           <p>Projected end-of-month cash balance</p>
         </div>
         <div className="legend">
           <span>
             <i className="dot green" />
-            Baseline
+            {baselineLabel}
           </span>
           <span>
             <i className="dot violet" />
@@ -212,7 +215,7 @@ export function ScenarioProjectionChart({
             <Line
               type="monotone"
               dataKey="baseline"
-              name="Baseline"
+              name={baselineLabel}
               stroke="#2b7660"
               strokeWidth={2.5}
               strokeDasharray="6 4"
@@ -238,7 +241,7 @@ export function ScenarioProjectionChart({
             <thead>
               <tr>
                 <th>Month</th>
-                <th>Baseline</th>
+                <th>{baselineLabel}</th>
                 <th>{label}</th>
               </tr>
             </thead>

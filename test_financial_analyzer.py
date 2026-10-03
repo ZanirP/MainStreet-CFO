@@ -96,6 +96,30 @@ class FinancialAnalyzerTests(unittest.TestCase):
             purchases=[{"amount": 5, "purchase_date": "2026-02-01"}])
         self.assertEqual(result["trends"]["revenue_change_percent"], -100)
 
+    def test_explainable_signals_and_coverage(self):
+        result = self.analyzer.analyze_business(
+            accounts=[{"balance": 300}],
+            deposits=[{"amount": 1000, "transaction_date": "2026-09-01"}, {"amount": 1100, "transaction_date": "2026-10-01"}],
+            purchases=[{"amount": 500, "purchase_date": "2026-09-02"}, {"amount": 700, "purchase_date": "2026-10-02"}],
+            bills=[{"status": "recurring", "payment_amount": 150}, {"status": "pending", "payment_amount": 999}])
+        signals = {item["id"]: item for item in result["signals"]}
+        self.assertEqual(signals["revenue_trend"]["value"], 10)
+        self.assertEqual(signals["expenses_trend"]["value"], 40)
+        self.assertEqual(signals["expense_growth"]["level"], "caution")
+        self.assertEqual(signals["expense_growth"]["value"], 30)
+        self.assertEqual(signals["recurring_obligations"]["value"], 50)
+        self.assertEqual(signals["cash_coverage"]["value"], 0.5)
+        self.assertEqual(signals["cash_coverage"]["level"], "caution")
+        self.assertEqual(result["signals"][0]["level"], "caution")
+        self.assertTrue(all(item["explanation"] for item in result["signals"]))
+
+    def test_signals_missing_data_do_not_claim_growth(self):
+        signals = {item["id"]: item for item in self.analyzer.analyze_business()["signals"]}
+        self.assertTrue(all(item["value"] is None for item in signals.values()))
+        self.assertTrue(all(item["level"] == "neutral" for item in signals.values()))
+        result = self.analyzer.analyze_business(deposits=[{"amount": 100, "transaction_date": "2026-10-01"}])
+        self.assertIsNone(next(item for item in result["signals"] if item["id"] == "revenue_trend")["value"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -66,6 +66,7 @@ class FinancialAnalyzer:
             },
             "recurring_bills": recurring,
             "health": self._health(revenue, expense_total, cash, recurring),
+            "signals": self._signals(monthly_revenue, monthly_expenses, cash, recurring),
         }
 
     @staticmethod
@@ -203,3 +204,42 @@ class FinancialAnalyzer:
             "can_cover_upcoming_bills": cash >= obligations,
             "bill_coverage_ratio": self._number(cash / obligations) if obligations > 0 else None,
         }
+
+    def _signals(self, revenue: Sequence[dict[str, Any]], expenses: Sequence[dict[str, Any]],
+                 cash: Decimal, bills: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Explain observed trends and coverage; missing evidence is never a positive signal."""
+        signals = []
+        changes = {}
+        for name, series in (("revenue", revenue), ("expenses", expenses)):
+            change = self._monthly_change(series) if len(series) >= 2 else None
+            changes[name] = change
+            title = f"{name.capitalize()} trend unavailable"
+            explanation = "At least two dated calendar months and a nonzero prior baseline are needed for a percentage comparison."
+            level = "neutral"
+            if change is not None:
+                direction = "growing" if change > 0 else "declining" if change < 0 else "stable"
+                title = f"{name.capitalize()} is {direction}"
+                explanation = f"{series[-1]['month']} vs {series[-2]['month']}: {change:+.2f}%. Calendar gaps count as zero; the latest month may be partial."
+                level = "positive" if (name == "revenue" and change > 0) or (name == "expenses" and change < 0) else "caution" if change != 0 else "neutral"
+            signals.append({"id": f"{name}_trend", "level": level, "title": title,
+                            "explanation": explanation, "value": change, "unit": "percent"})
+        rev_change, exp_change = changes["revenue"], changes["expenses"]
+        comparable = rev_change is not None and exp_change is not None
+        faster = comparable and exp_change > 0 and exp_change > rev_change
+        signals.append({"id": "expense_growth", "level": "caution" if faster else "neutral",
+                        "title": "Expenses are growing faster than revenue" if faster else "Expense growth comparison" if comparable else "Growth comparison unavailable",
+                        "explanation": f"Revenue changed {rev_change:+.2f}% and expenses changed {exp_change:+.2f}% over the same latest two months." if comparable else "Both monthly percentage changes are needed to compare growth.",
+                        "value": round(exp_change - rev_change, 2) if comparable else None, "unit": "percentage_points"})
+        obligations = sum((self._amount(bill["payment_amount"]) for bill in bills if bill["status"] == "recurring"), ZERO)
+        ratio = self._number(obligations / cash * 100) if cash > 0 else None
+        signals.append({"id": "recurring_obligations", "level": "caution" if obligations > max(cash, ZERO) else "neutral",
+                        "title": "Recurring obligations relative to cash",
+                        "explanation": f"Listed recurring bills total ${self._number(obligations):,.2f}; cash is ${self._number(cash):,.2f}. " + (f"That is {ratio:.2f}% of cash." if ratio is not None else "A percentage is unavailable without positive cash.") + " This sums listed bills once, not an inferred payment schedule.",
+                        "value": ratio, "unit": "percent"})
+        average = sum((self._amount(row["amount"]) for row in expenses), ZERO) / len(expenses) if expenses else ZERO
+        coverage = self._number(max(cash, ZERO) / average) if average > 0 else None
+        signals.append({"id": "cash_coverage", "level": "caution" if coverage is not None and coverage < 1 else "neutral",
+                        "title": "Cash coverage of average expenses",
+                        "explanation": f"Average dated monthly expenses are ${self._number(average):,.2f}. " + (f"Cash covers {coverage:.2f} months at that spending level, assuming no new revenue." if coverage is not None else "Coverage is unavailable without positive average dated expenses.") + " This is a coverage measure, not a runway forecast.",
+                        "value": coverage, "unit": "months"})
+        return sorted(signals, key=lambda signal: signal["level"] != "caution")
