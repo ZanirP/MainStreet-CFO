@@ -20,6 +20,7 @@ import {
   UpcomingBills,
 } from "./components/FinancialDetails";
 import ScenarioPanel from "./components/ScenarioPanel";
+import AskCFO from "./components/AskCFO";
 
 export default function Dashboard() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -236,6 +237,10 @@ export default function Dashboard() {
                     </div>
                     <ScenarioPanel
                       key={`${selected}-${version}`}
+                      businessId={selected}
+                    />
+                    <AskCFO
+                      key={`cfo-${selected}-${version}`}
                       businessId={selected}
                     />
                   </>

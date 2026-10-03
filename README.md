@@ -388,3 +388,73 @@ first-negative point may extend beyond the selected horizon, using the same
 constant-flow assumption. `negative_within_horizon` includes immediate shortfalls,
 even if subsequent revenue restores cash. These limits are model thresholds,
 not guarantees or financial advice.
+
+## Ask Your CFO
+
+The dashboard now includes a focused question-and-answer section. Gemini interprets
+questions and explains context; FinancialAnalyzer and ScenarioEngine remain the
+source of financial calculations. Hiring, equipment, withdrawals, baseline cash
+projections, signals, stress assumptions and decision limits are reused. Hiring
+questions also receive a deterministic revenue-drop-to-break-even threshold.
+Missing inputs prompt clarification rather than guessed wages or amounts.
+
+Backend `.env` configuration (never add these to `frontend/.env`):
+
+```dotenv
+GEMINI_API_KEY=your_backend_only_key
+# Optional; this model was verified with the configured account:
+GEMINI_MODEL=gemini-3.5-flash-lite
+```
+
+The service uses Gemini's REST structured-output API through the existing
+`requests` dependency; no new packages are required. See Google's
+[structured-output documentation](https://ai.google.dev/gemini-api/docs/structured-output)
+and [Flash-Lite model documentation](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite).
+Restart FastAPI after changing environment configuration.
+
+`POST /businesses/{customer_id}/cfo/ask` accepts:
+
+```json
+{"question":"Can I afford to hire someone at $20/hour for 30 hours a week?"}
+```
+
+It returns `answer`, `status` (`answered` or `needs_information`), cited `facts`
+(with value, display, label and historical/projection/scenario source), and
+structured `context`. No prior conversation is stored; include decision inputs
+in each question. The default projection is six months, with a supported range
+of one through 120 months. The context includes available history, signals,
+upcoming bills and applicable calculations. Model calls contain the question
+and relevant financial data, but never Nessie or Gemini credentials. No questions
+or responses are logged or saved by this application.
+
+Gemini must reference backend fact placeholders for numerical statements. The
+backend rejects unknown references or newly generated numerical quantities and
+substitutes backend-formatted figures. This verifies numerical sources, not every
+semantic claim; explanations can still be imperfect. The model is explicitly
+instructed to distinguish history from assumptions, acknowledge missing causes
+and avoid certainty about future outcomes. Missing data or unsupported questions
+return clarification; missing configuration, provider failures and malformed
+answers produce sanitized errors. The dashboard and deterministic scenarios do
+not depend on Gemini availability.
+
+Offline verification:
+
+```bash
+.venv/bin/python -m unittest test_cfo_assistant test_app test_scenario_engine test_financial_analyzer test_nessie_service
+cd frontend
+npm test
+npm run build
+npm run test:e2e
+```
+
+Run locally in separate terminals from the repository root:
+
+```bash
+source .venv/bin/activate
+uvicorn backend.app:app --reload
+```
+
+```bash
+cd frontend
+npm run dev
+```

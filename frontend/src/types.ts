@@ -137,3 +137,16 @@ export const scenarioLabel = (kind: ScenarioKind) =>
     : kind === "equipment_purchase"
       ? "After equipment purchase"
       : "After withdrawal";
+
+export interface CFOAnswer {
+  answer: string;
+  status: "answered" | "needs_information";
+  facts: {
+    id: string;
+    label: string;
+    display?: string;
+    value: string | number;
+    source: "historical" | "projection" | "scenario";
+  }[];
+  context: Record<string, unknown>;
+}

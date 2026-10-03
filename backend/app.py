@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from backend.services.financial_analyzer import FinancialAnalyzer
 from backend.services.nessie_service import NessieService, NessieServiceError
 from backend.services.scenario_engine import ScenarioEngine
+from backend.services.cfo_assistant import CFOAssistant, CFOAssistantError
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
@@ -61,6 +62,32 @@ def _records(value: Any) -> list[dict[str, Any]]:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+class CFOQuestionRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=2000, strict=True)
+
+
+def get_cfo_assistant() -> CFOAssistant:
+    return CFOAssistant()
+
+
+@app.exception_handler(CFOAssistantError)
+async def cfo_error_handler(request: Request, exc: CFOAssistantError) -> JSONResponse:
+    return JSONResponse(status_code=exc.status_code, content={"detail": str(exc)})
+
+
+@app.post("/businesses/{customer_id}/cfo/ask")
+def ask_cfo(customer_id: str, inputs: CFOQuestionRequest,
+            service: NessieService = Depends(get_nessie_service),
+            assistant: CFOAssistant = Depends(get_cfo_assistant)) -> dict[str, Any]:
+    if not inputs.question.strip():
+        raise HTTPException(status_code=422, detail="Enter a financial question.")
+    analysis = _business_analysis(customer_id, service)
+    try:
+        return assistant.ask(analysis, inputs.question)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Enter a valid financial question.") from None
 
 
 @app.get("/businesses")

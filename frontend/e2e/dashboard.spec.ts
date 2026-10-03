@@ -92,6 +92,25 @@ for (const viewport of [
           },
         });
       let data: unknown = analysis;
+      if (path.endsWith("/cfo/ask")) {
+        expect(request.postDataJSON()).toEqual({
+          question: "How much cash should I have after six months?",
+        });
+        data = {
+          answer:
+            "Projected cash is $66,000.00 under constant historical cash flow, not a guarantee.",
+          status: "answered",
+          context: {},
+          facts: [
+            {
+              id: "f0",
+              label: "projection.cash_projection[5].scenario",
+              value: 66000,
+              source: "projection",
+            },
+          ],
+        };
+      }
       if (path === "/businesses")
         data = [
           { _id: "arbor", first_name: "Arbor Coffee Co." },
@@ -263,7 +282,24 @@ for (const viewport of [
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    await page
+      .getByRole("button", {
+        name: "How much cash should I have after six months?",
+      })
+      .click();
+    await expect(
+      page.getByText(
+        "Projected cash is $66,000.00 under constant historical cash flow, not a guarantee.",
+      ),
+    ).toBeVisible();
+    await expect(page.locator(".cfo-source-tags")).toContainText("Projection");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
     await page.getByLabel("Select a business").selectOption("arcade");
+    await expect(page.locator(".cfo-answer")).toHaveCount(0);
     await expect(
       page.getByText("A little planning. A lot more clarity."),
     ).toBeVisible();

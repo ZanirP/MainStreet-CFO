@@ -1412,3 +1412,122 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+.cfo-panel {
+  margin-top: 28px;
+  padding: 28px;
+  scroll-margin-top: 24px;
+}
+.cfo-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+.cfo-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+.cfo-heading p,
+.cfo-empty {
+  color: #71806e;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.cfo-suggestions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 22px 0;
+}
+.cfo-suggestions button {
+  text-align: left;
+  justify-content: space-between;
+  white-space: normal;
+  line-height: 1.5;
+}
+.cfo-form label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.cfo-input-row {
+  display: flex;
+  gap: 10px;
+}
+.cfo-input-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #e3e8df;
+  border-radius: 10px;
+  padding: 13px;
+  background: white;
+  font: inherit;
+}
+.cfo-answer {
+  margin: 22px 0;
+  padding: 22px;
+  background: #f5f9f7;
+  border: 1px solid #e3e8df;
+  border-radius: 12px;
+}
+.cfo-question-echo {
+  font-size: 13px;
+  color: #71806e;
+  margin-top: 0;
+}
+.cfo-source-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cfo-answer-text {
+  white-space: pre-wrap;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.cfo-answer details {
+  font-size: 12px;
+}
+.cfo-answer summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.cfo-answer ul {
+  padding: 0;
+  list-style: none;
+}
+.cfo-answer li {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+.cfo-answer li span {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.cfo-answer li strong {
+  flex-shrink: 0;
+}
+.cfo-error {
+  color: #9b3535;
+  margin: 20px 0;
+}
+@media (max-width: 640px) {
+  .cfo-panel {
+    padding: 20px;
+  }
+  .cfo-suggestions {
+    grid-template-columns: 1fr;
+  }
+  .cfo-input-row {
+    flex-direction: column;
+  }
+  .cfo-heading {
+    flex-direction: column;
+  }
+}

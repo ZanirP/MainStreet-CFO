@@ -1,5 +1,6 @@
 import type {
   Analysis,
+  CFOAnswer,
   Business,
   HireInputs,
   HireResult,
@@ -43,6 +44,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return data as T;
 }
 export const api = {
+  askCFO: (id: string, question: string, signal?: AbortSignal) =>
+    request<CFOAnswer>(`/businesses/${encodeURIComponent(id)}/cfo/ask`, {
+      method: "POST",
+      body: JSON.stringify({ question }),
+      signal,
+    }),
   businesses: (signal?: AbortSignal) =>
     request<Business[]>("/businesses", { signal }),
   analysis: (id: string, signal?: AbortSignal) =>

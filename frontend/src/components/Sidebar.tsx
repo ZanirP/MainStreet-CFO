@@ -5,6 +5,7 @@ import {
   HeartPulse,
   Sparkles,
   ArrowUpRight,
+  MessageCircle,
 } from "lucide-react";
 export default function Sidebar() {
   return (
@@ -34,6 +35,10 @@ export default function Sidebar() {
         <a href="#what-if" className="nav-link">
           <Sparkles size={18} />
           What if?<span className="nav-badge">NEW</span>
+        </a>
+        <a href="#ask-cfo" className="nav-link">
+          <MessageCircle size={18} />
+          Ask Your CFO
         </a>
       </nav>
       <div className="sidebar-note">
