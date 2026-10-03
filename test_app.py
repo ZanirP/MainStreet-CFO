@@ -85,6 +85,47 @@ class AppTests(unittest.TestCase):
             "Origin": "https://example.com", "Access-Control-Request-Method": "GET"})
         self.assertEqual(response.status_code, 400)
 
+    def test_hire_scenario(self):
+        self.service.get_customer_accounts.return_value = [{"_id": "a", "balance": 24000}]
+        self.service.get_deposits.return_value = [{"amount": 10000, "transaction_date": "2026-10-01"}]
+        self.service.get_purchases.return_value = [{"amount": 3000, "purchase_date": "2026-10-02"}]
+        self.service.get_bills.return_value = []
+        response = self.client.post("/businesses/c/scenarios/hire", json={"hourly_wage": 18, "hours_per_week": 30})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["monthly_added_cost"], 2340)
+        self.assertEqual(response.json()["cash_projection"][0],
+                         {"month": "2026-11", "baseline": 31000, "scenario": 28660})
+        self.assertEqual(len(response.json()["cash_projection"]), 6)
+        self.service.get_customer_accounts.assert_called_once_with("c")
+
+    def test_hire_input_validation(self):
+        for field, value in [("hourly_wage", -1), ("hours_per_week", -1),
+                             ("months", 0), ("months", -1), ("months", 1.5),
+                             ("months", True), ("hourly_wage", True),
+                             ("hourly_wage", "NaN"), ("hours_per_week", None)]:
+            payload = {"hourly_wage": 18, "hours_per_week": 30, "months": 6, field: value}
+            with self.subTest(field=field, value=value):
+                response = self.client.post("/businesses/c/scenarios/hire", json=payload)
+                self.assertEqual(response.status_code, 422)
+        self.service.get_customer_accounts.assert_not_called()
+
+    def test_hire_missing_history_and_nessie_failure(self):
+        self.service.get_customer_accounts.return_value = []
+        response = self.client.post("/businesses/c/scenarios/hire", json={"hourly_wage": 18, "hours_per_week": 30})
+        self.assertEqual(response.status_code, 422)
+        self.assertIn("history", response.json()["detail"])
+        self.service.get_customer_accounts.side_effect = NessieServiceError("key=secret", 500)
+        response = self.client.post("/businesses/c/scenarios/hire", json={"hourly_wage": 18, "hours_per_week": 30})
+        self.assertEqual(response.status_code, 502)
+        self.assertNotIn("secret", response.text)
+
+    def test_hire_cors_preflight(self):
+        response = self.client.options("/businesses/c/scenarios/hire", headers={
+            "Origin": "http://localhost:5173", "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["access-control-allow-origin"], "http://localhost:5173")
+
 
 if __name__ == "__main__":
     unittest.main()

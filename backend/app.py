@@ -7,9 +7,11 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from backend.services.financial_analyzer import FinancialAnalyzer
 from backend.services.nessie_service import NessieService, NessieServiceError
+from backend.services.scenario_engine import ScenarioEngine
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
@@ -17,9 +19,15 @@ app = FastAPI(title="MainStreet CFO")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+
+class HireScenarioRequest(BaseModel):
+    hourly_wage: float = Field(ge=0, allow_inf_nan=False, strict=True)
+    hours_per_week: float = Field(ge=0, allow_inf_nan=False, strict=True)
+    months: int = Field(default=6, gt=0, strict=True)
 
 
 def get_nessie_service() -> NessieService:
@@ -63,6 +71,11 @@ def businesses(service: NessieService = Depends(get_nessie_service)) -> list[dic
 def business_analysis(
     customer_id: str, service: NessieService = Depends(get_nessie_service)
 ) -> dict[str, Any]:
+    return _business_analysis(customer_id, service)
+
+
+def _business_analysis(customer_id: str, service: NessieService) -> dict[str, Any]:
+    """Shared loading and analysis for the dashboard and scenario endpoints."""
     accounts = _records(service.get_customer_accounts(customer_id))
     deposits, purchases, bills = [], [], []
     # Include credit accounts for their expenses; the analyzer owns cash-balance rules.
@@ -76,3 +89,16 @@ def business_analysis(
     return FinancialAnalyzer().analyze_business(
         accounts=accounts, deposits=deposits, purchases=purchases, bills=bills
     )
+
+
+@app.post("/businesses/{customer_id}/scenarios/hire")
+def hire_scenario(
+    customer_id: str, inputs: HireScenarioRequest,
+    service: NessieService = Depends(get_nessie_service),
+) -> dict[str, Any]:
+    analysis = _business_analysis(customer_id, service)
+    try:
+        return ScenarioEngine().simulate_hire(analysis, **inputs.model_dump())
+    except ValueError as exc:
+        # ScenarioEngine messages name fields only, never supplied values or secrets.
+        raise HTTPException(status_code=422, detail=str(exc)) from None
