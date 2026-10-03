@@ -55,6 +55,14 @@ class NessieService:
     def get_customers(self):
         return self._request("GET", "/customers")
 
+    def get_merchants(self):
+        """GET /merchants, verified against the official OpenAPI specification."""
+        return self._request("GET", "/merchants")
+
+    def create_merchant(self, payload):
+        """POST /merchants; the documented minimum body contains name."""
+        return self._request("POST", "/merchants", payload)
+
     def get_customer(self, customer_id):
         return self._request("GET", f"/customers/{self._id(customer_id)}")
 

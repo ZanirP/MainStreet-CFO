@@ -23,6 +23,8 @@ class NessieServiceTests(unittest.TestCase):
         payload = {"nickname": "demo"}
         cases = [
             ("get_customers", (), "GET", "/customers"),
+            ("get_merchants", (), "GET", "/merchants"),
+            ("create_merchant", (payload,), "POST", "/merchants"),
             ("get_customer", ("c",), "GET", "/customers/c"),
             ("get_customer_accounts", ("c",), "GET", "/customers/c/accounts"),
             ("get_account", ("a",), "GET", "/accounts/a"),

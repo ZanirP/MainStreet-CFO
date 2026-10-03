@@ -228,3 +228,53 @@ npm run dev
 Open `http://127.0.0.1:5173`. The browser uses only the FastAPI backend.
 Businesses and all financial results come from the backend. Empty customer
 lists show an empty state; hiring projections need dated monthly history.
+
+## Seed the Arbor Coffee demo
+
+From the repository root, with the existing `.env` configured:
+
+```sh
+.venv/bin/python scripts/seed_nessie.py
+```
+
+Preview without making API requests:
+
+```sh
+.venv/bin/python scripts/seed_nessie.py --dry-run
+```
+
+The script creates the customer as `first_name: "Arbor"`,
+`last_name: "Coffee Co."`, with an explicitly fictional Ann Arbor address.
+It creates a Checking account with a $26,000 balance, then 25 deposits,
+35 purchases, and 36 bills. The history covers May–September 2026 and exactly
+matches the requested monthly revenue and realized-expense targets. Historical
+bills include existing staff payroll alongside rent, utilities, internet,
+insurance, and POS software; six separate recurring bills are dated in October.
+The average monthly baseline is $6,340, reduced to $4,000 by an $18/hour,
+30-hour/week hire. Projection labels begin in October after September history.
+
+Payloads use the documented customer, account, deposit, and bill fields from
+[Nessie's OpenAPI specification](https://nessieisreal.com/nessie-openapi-spec.yaml).
+Purchases use the [official SDK contract](https://github.com/nessieisreal/nessie-javascript-sdk/blob/master/lib/purchase.js),
+including a real merchant ID. The only new service operations are
+`get_merchants()` and `create_merchant()`, using the documented `/merchants`
+route. An existing merchant is reused; a minimal demo supplier is created if
+none are available.
+
+The customer ID is printed for testing `/businesses/{customer_id}/analysis`.
+A second run detects Arbor Coffee and stops without creating additional
+records. Run only one seed process at a time. A failure can leave partial data;
+the script does not blindly retry writes or automatically delete records.
+Inspect partial records before making changes.
+
+The script reads the account balance back after seeding and checks the
+$24,000–$28,000 target. The public contract does not specify historical
+transaction balance side effects. If Nessie changes the balance outside that
+range, the script reports a failure rather than claiming a successful seed or
+inventing unsupported balance-update fields.
+
+Offline seed checks:
+
+```sh
+.venv/bin/python -m unittest test_seed_nessie test_nessie_service
+```
