@@ -1301,3 +1301,19 @@ th {
     transition: none !important;
   }
 }
+.scenario-select-label {
+  display: block;
+  font-size: 10px;
+  color: #849174;
+  margin-bottom: 7px;
+}
+.scenario-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dfe5d7;
+  border-radius: 7px;
+  background: white;
+  color: #425739;
+  font-size: 12px;
+  margin-bottom: 20px;
+}

@@ -1,4 +1,11 @@
-import type { Analysis, Business, HireInputs, HireResult } from "./types";
+import type {
+  Analysis,
+  Business,
+  HireInputs,
+  HireResult,
+  OneTimeInputs,
+  OneTimeResult,
+} from "./types";
 const BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
 ).replace(/\/$/, "");
@@ -25,7 +32,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       typeof data?.detail === "string"
         ? data.detail
         : response.status === 422
-          ? "Check your wage, hours, and projection period. Use nonnegative numbers and a whole number of months."
+          ? "Check your scenario inputs and projection period. Use nonnegative numbers and a whole number of months."
           : "We couldn’t load your financial data. Please try again.";
     throw new Error(message);
   }
@@ -45,6 +52,16 @@ export const api = {
   hire: (id: string, inputs: HireInputs, signal?: AbortSignal) =>
     request<HireResult>(
       `/businesses/${encodeURIComponent(id)}/scenarios/hire`,
+      { method: "POST", body: JSON.stringify(inputs), signal },
+    ),
+  equipment: (id: string, inputs: OneTimeInputs, signal?: AbortSignal) =>
+    request<OneTimeResult>(
+      `/businesses/${encodeURIComponent(id)}/scenarios/equipment`,
+      { method: "POST", body: JSON.stringify(inputs), signal },
+    ),
+  withdrawal: (id: string, inputs: OneTimeInputs, signal?: AbortSignal) =>
+    request<OneTimeResult>(
+      `/businesses/${encodeURIComponent(id)}/scenarios/withdrawal`,
       { method: "POST", body: JSON.stringify(inputs), signal },
     ),
 };

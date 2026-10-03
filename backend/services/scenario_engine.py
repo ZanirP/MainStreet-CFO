@@ -5,7 +5,7 @@ from typing import Any, Mapping
 
 
 class ScenarioEngine:
-    """Project wages only; no assumed taxes, benefits, growth, or hiring revenue."""
+    """Project recurring wages or one-time cash outflows without assumed growth."""
 
     def simulate_hire(
         self, current_analysis: Mapping[str, Any], hourly_wage: float,
@@ -21,17 +21,7 @@ class ScenarioEngine:
         hours = self._amount(hours_per_week, "hours_per_week")
         if wage < 0 or hours < 0:
             raise ValueError("hourly_wage and hours_per_week must be nonnegative")
-        if isinstance(months, bool) or not isinstance(months, int) or months <= 0:
-            raise ValueError("months must be a positive integer")
-        if not isinstance(current_analysis, Mapping):
-            raise ValueError("Financial analysis is required")
-        summary = current_analysis.get("summary")
-        if not isinstance(summary, Mapping):
-            raise ValueError("Financial analysis must contain summary.cash_balance")
-        cash = self._amount(summary.get("cash_balance"), "cash_balance")
-        baseline, last_month = self._baseline(current_analysis)
-        if last_month + months > 9999 * 12 + 11:
-            raise ValueError("Projection extends beyond the supported calendar")
+        cash, baseline, last_month = self._projection_context(current_analysis, months)
         # Keep full decimal precision until presentation, avoiding cumulative penny drift.
         added_cost = wage * hours * 52 / 12
         scenario_flow = baseline - added_cost
@@ -46,6 +36,52 @@ class ScenarioEngine:
             }
         except (InvalidOperation, OverflowError):
             raise ValueError("Financial values exceed the supported numeric range") from None
+
+    def simulate_equipment(self, current_analysis: Mapping[str, Any], amount: float,
+                           months: int = 6) -> dict[str, Any]:
+        """Pay for equipment once, before the first projected month's cash flow."""
+        return self._simulate_one_time(current_analysis, amount, months, "equipment_purchase")
+
+    def simulate_withdrawal(self, current_analysis: Mapping[str, Any], amount: float,
+                            months: int = 6) -> dict[str, Any]:
+        """Withdraw owner cash once; ongoing operating cash flow stays unchanged."""
+        return self._simulate_one_time(current_analysis, amount, months, "owner_withdrawal")
+
+    def _simulate_one_time(self, current_analysis: Mapping[str, Any], amount: float,
+                           months: int, scenario: str) -> dict[str, Any]:
+        cost = self._amount(amount, "amount")
+        if cost < 0:
+            raise ValueError("amount must be nonnegative")
+        cash, baseline, last_month = self._projection_context(current_analysis, months)
+        try:
+            return {
+                "scenario": scenario,
+                "inputs": {"amount": float(cost), "months": months},
+                "one_time_cost": self._number(cost),
+                "monthly_added_cost": 0.0,
+                "baseline_monthly_cash_flow": self._number(baseline),
+                "projected_monthly_cash_flow": self._number(baseline),
+                "cash_projection": self._projection(
+                    cash, baseline, baseline, last_month, months, upfront_cost=cost
+                ),
+            }
+        except (InvalidOperation, OverflowError):
+            raise ValueError("Financial values exceed the supported numeric range") from None
+
+    def _projection_context(self, current_analysis: Mapping[str, Any], months: int
+                            ) -> tuple[Decimal, Decimal, int]:
+        if isinstance(months, bool) or not isinstance(months, int) or months <= 0:
+            raise ValueError("months must be a positive integer")
+        if not isinstance(current_analysis, Mapping):
+            raise ValueError("Financial analysis is required")
+        summary = current_analysis.get("summary")
+        if not isinstance(summary, Mapping):
+            raise ValueError("Financial analysis must contain summary.cash_balance")
+        cash = self._amount(summary.get("cash_balance"), "cash_balance")
+        baseline, last_month = self._baseline(current_analysis)
+        if last_month + months > 9999 * 12 + 11:
+            raise ValueError("Projection extends beyond the supported calendar")
+        return cash, baseline, last_month
 
     @staticmethod
     def _amount(value: Any, field: str) -> Decimal:
@@ -86,7 +122,7 @@ class ScenarioEngine:
         expenses = self._monthly_amounts(analysis.get("monthly_expenses"), "monthly_expenses")
         calendar = revenue.keys() | expenses.keys()
         if not calendar:
-            raise ValueError("Monthly financial history is required to simulate hiring")
+            raise ValueError("Monthly financial history is required to simulate a scenario")
         first, last = min(calendar), max(calendar)
         net = sum(revenue.values(), Decimal(0)) - sum(expenses.values(), Decimal(0))
         return net / (last - first + 1), last
@@ -97,6 +133,7 @@ class ScenarioEngine:
 
     def _projection(
         self, cash: Decimal, baseline: Decimal, scenario: Decimal, last_month: int, months: int,
+        *, upfront_cost: Decimal = Decimal(0),
     ) -> list[dict[str, Any]]:
         result = []
         for offset in range(1, months + 1):
@@ -104,6 +141,6 @@ class ScenarioEngine:
             result.append({
                 "month": f"{year:04d}-{month + 1:02d}",
                 "baseline": self._number(cash + baseline * offset),
-                "scenario": self._number(cash + scenario * offset),
+                "scenario": self._number(cash - upfront_cost + scenario * offset),
             })
         return result

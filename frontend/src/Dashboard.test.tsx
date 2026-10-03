@@ -172,4 +172,49 @@ describe("dashboard vertical slice", () => {
       ).toBe(false),
     );
   });
+  it("posts one-time scenarios and reuses projected balances", async () => {
+    setup();
+    const user = userEvent.setup();
+    render(<Dashboard />);
+    await screen.findByText("$24,000.00");
+    for (const [kind, route, label] of [
+      ["equipment_purchase", "equipment", "Equipment purchase amount"],
+      ["owner_withdrawal", "withdrawal", "Withdrawal amount"],
+    ]) {
+      await user.selectOptions(screen.getByLabelText("Plan a decision"), kind);
+      expect(
+        screen.queryByText("2026-11 baseline 31000 scenario 26000"),
+      ).toBeNull();
+      await user.clear(screen.getByLabelText(label));
+      await user.type(screen.getByLabelText(label), "5000");
+      fetchMock.mockResolvedValueOnce(
+        json({
+          ...scenario,
+          scenario: kind,
+          inputs: { amount: 5000, months: 6 },
+          one_time_cost: 5000,
+          monthly_added_cost: 0,
+          projected_monthly_cash_flow: 7000,
+          cash_projection: [
+            { month: "2026-11", baseline: 31000, scenario: 26000 },
+          ],
+        }),
+      );
+      await user.click(
+        screen.getByRole("button", { name: "See the cash impact" }),
+      );
+      expect(
+        await screen.findByText("2026-11 baseline 31000 scenario 26000"),
+      ).toBeTruthy();
+      const call = fetchMock.mock.calls.at(-1)!;
+      expect(call[0]).toBe(
+        `http://localhost:8000/businesses/arbor/scenarios/${route}`,
+      );
+      expect(JSON.parse(String(call[1]?.body))).toEqual({
+        amount: 5000,
+        months: 6,
+      });
+      expect(screen.getAllByText("One-time cash reduction")[1]).toBeTruthy();
+    }
+  });
 });

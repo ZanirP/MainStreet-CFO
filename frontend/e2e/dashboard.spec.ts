@@ -102,6 +102,27 @@ for (const viewport of [
           })),
         };
       }
+      if (
+        path.endsWith("/scenarios/equipment") ||
+        path.endsWith("/scenarios/withdrawal")
+      ) {
+        expect(request.postDataJSON()).toEqual({ amount: 5000, months: 6 });
+        data = {
+          scenario: path.endsWith("equipment")
+            ? "equipment_purchase"
+            : "owner_withdrawal",
+          inputs: request.postDataJSON(),
+          one_time_cost: 5000,
+          monthly_added_cost: 0,
+          baseline_monthly_cash_flow: 7000,
+          projected_monthly_cash_flow: 7000,
+          cash_projection: Array.from({ length: 6 }, (_, i) => ({
+            month: i < 2 ? `2026-${11 + i}` : `2027-0${i - 1}`,
+            baseline: 24000 + 7000 * (i + 1),
+            scenario: 19000 + 7000 * (i + 1),
+          })),
+        };
+      }
       await route.fulfill({
         json: data,
         headers: { "Access-Control-Allow-Origin": "*" },
@@ -127,6 +148,22 @@ for (const viewport of [
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    for (const kind of ["equipment_purchase", "owner_withdrawal"]) {
+      await page.getByLabel("Plan a decision").selectOption(kind);
+      await expect(page.locator(".projection-chart")).toHaveCount(0);
+      await page.getByRole("button", { name: "See the cash impact" }).click();
+      await expect(
+        page
+          .locator(".scenario-metrics")
+          .getByText("$5,000.00", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.locator(".projection-chart .recharts-surface"),
+      ).toBeVisible();
+      await expect(page.locator(".projection-takeaway")).toContainText(
+        "$61,000.00",
+      );
+    }
     await page.getByLabel("Select a business").selectOption("arcade");
     await expect(
       page.getByText("A little planning. A lot more clarity."),

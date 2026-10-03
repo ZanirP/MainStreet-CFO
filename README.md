@@ -278,3 +278,40 @@ Offline seed checks:
 ```sh
 .venv/bin/python -m unittest test_seed_nessie test_nessie_service
 ```
+
+## One-time scenarios
+
+The What if? selector now also supports Equipment Purchase and Owner Withdrawal.
+Both reduce current business cash once, before the first projected month's
+operating cash flow. They retain the same historical baseline, projection dates,
+and `cash_projection` format as hiring. Ongoing monthly cash flow is unchanged;
+this version assumes no financing, equipment-driven revenue growth, taxes, or
+other secondary effects. These endpoints simulate only; they do not create
+Nessie transactions or move funds.
+
+```sh
+curl -X POST http://127.0.0.1:8000/businesses/CUSTOMER_ID/scenarios/equipment \
+  -H 'Content-Type: application/json' -d '{"amount":5000,"months":6}'
+curl -X POST http://127.0.0.1:8000/businesses/CUSTOMER_ID/scenarios/withdrawal \
+  -H 'Content-Type: application/json' -d '{"amount":5000,"months":6}'
+```
+
+Both bodies accept a nonnegative finite `amount` and a positive integer `months`
+(default six). The engine methods are `simulate_equipment(analysis, amount,
+months=6)` and `simulate_withdrawal(analysis, amount, months=6)`. Responses include
+`one_time_cost`, zero `monthly_added_cost`, unchanged baseline/projected monthly
+cash flow, and the existing monthly baseline/scenario balance arrays. A $5,000
+outflow keeps the scenario balance $5,000 below baseline each month, rather than
+subtracting $5,000 repeatedly. Amounts exceeding available cash are permitted
+in the simulation, and negative projected balances remain visible.
+
+The frontend reuses its result panel and Recharts comparison graph, with labels
+for each scenario. Hiring retains its recurring monthly wage calculation.
+
+```sh
+.venv/bin/python -m unittest test_scenario_engine test_app test_financial_analyzer test_nessie_service
+cd frontend
+npm test
+npm run test:e2e
+npm run build
+```

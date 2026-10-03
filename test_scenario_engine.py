@@ -93,6 +93,49 @@ class ScenarioEngineTests(unittest.TestCase):
         result = self.engine.simulate_hire(data, 10, 12, 1)
         self.assertEqual(result["cash_projection"], [{"month": "2026-11", "baseline": 1300, "scenario": 780}])
 
+    def test_one_time_reductions_apply_once(self):
+        for method, kind in [(self.engine.simulate_equipment, "equipment_purchase"),
+                             (self.engine.simulate_withdrawal, "owner_withdrawal")]:
+            data = analysis()
+            original = copy.deepcopy(data)
+            result = method(data, 5000, 6)
+            self.assertEqual(result["scenario"], kind)
+            self.assertEqual(result["one_time_cost"], 5000)
+            self.assertEqual(result["monthly_added_cost"], 0)
+            self.assertEqual(result["projected_monthly_cash_flow"], 7000)
+            self.assertEqual(result["cash_projection"][0], {"month": "2026-11", "baseline": 31000, "scenario": 26000})
+            self.assertEqual(result["cash_projection"][-1], {"month": "2027-04", "baseline": 66000, "scenario": 61000})
+            for row in result["cash_projection"]:
+                self.assertEqual(row["baseline"] - row["scenario"], 5000)
+            self.assertEqual(data, original)
+            self.assertEqual(result, method(data, 5000, 6))
+            json.dumps(result, allow_nan=False)
+
+    def test_one_time_validation_and_zero_cost(self):
+        for method in (self.engine.simulate_equipment, self.engine.simulate_withdrawal):
+            for amount in (-1, None, True, "5", float("nan"), float("inf")):
+                with self.assertRaises(ValueError):
+                    method(analysis(), amount)
+            for months in (0, -1, 1.5, True):
+                with self.assertRaises(ValueError):
+                    method(analysis(), 1, months)
+            for missing in ({}, None, FinancialAnalyzer().analyze_business()):
+                with self.assertRaises(ValueError):
+                    method(missing, 1)
+            result = method(analysis(), 0, 1)
+            self.assertEqual(result["cash_projection"][0]["baseline"], result["cash_projection"][0]["scenario"])
+
+    def test_one_time_negative_balances_and_cents(self):
+        for method in (self.engine.simulate_equipment, self.engine.simulate_withdrawal):
+            result = method(analysis(0), 10000.25, 2)
+            self.assertEqual(result["cash_projection"][0]["scenario"], -3000.25)
+            self.assertEqual(result["cash_projection"][1]["scenario"], 3999.75)
+            data = analysis()
+            data["monthly_revenue"] = [{"month": "9999-12", "amount": 1}]
+            data["monthly_expenses"] = []
+            with self.assertRaises(ValueError):
+                method(data, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

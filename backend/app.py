@@ -102,3 +102,31 @@ def hire_scenario(
     except ValueError as exc:
         # ScenarioEngine messages name fields only, never supplied values or secrets.
         raise HTTPException(status_code=422, detail=str(exc)) from None
+
+
+class OneTimeScenarioRequest(BaseModel):
+    amount: float = Field(ge=0, allow_inf_nan=False, strict=True)
+    months: int = Field(default=6, gt=0, strict=True)
+
+
+def _one_time_scenario(customer_id: str, inputs: OneTimeScenarioRequest,
+                       service: NessieService, scenario: str) -> dict[str, Any]:
+    analysis = _business_analysis(customer_id, service)
+    engine = ScenarioEngine()
+    simulate = engine.simulate_equipment if scenario == "equipment" else engine.simulate_withdrawal
+    try:
+        return simulate(analysis, **inputs.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
+
+
+@app.post("/businesses/{customer_id}/scenarios/equipment")
+def equipment_scenario(customer_id: str, inputs: OneTimeScenarioRequest,
+                       service: NessieService = Depends(get_nessie_service)) -> dict[str, Any]:
+    return _one_time_scenario(customer_id, inputs, service, "equipment")
+
+
+@app.post("/businesses/{customer_id}/scenarios/withdrawal")
+def withdrawal_scenario(customer_id: str, inputs: OneTimeScenarioRequest,
+                        service: NessieService = Depends(get_nessie_service)) -> dict[str, Any]:
+    return _one_time_scenario(customer_id, inputs, service, "withdrawal")

@@ -7,7 +7,13 @@ import {
   UserRoundPlus,
 } from "lucide-react";
 import { api } from "../api";
-import type { HireInputs, HireResult } from "../types";
+import type {
+  HireInputs,
+  ScenarioResult,
+  ScenarioKind,
+  OneTimeInputs,
+} from "../types";
+import { scenarioLabel } from "../types";
 import { currency, monthLabel } from "../format";
 import { ErrorNotice } from "./Shared";
 import { ScenarioProjectionChart } from "./Charts";
@@ -108,14 +114,95 @@ export function HireEmployeeForm({
     </form>
   );
 }
+function OneTimeForm({
+  busy,
+  kind,
+  onSubmit,
+  onEdit,
+}: {
+  busy: boolean;
+  kind: ScenarioKind;
+  onSubmit: (inputs: OneTimeInputs) => void;
+  onEdit: () => void;
+}) {
+  const [amount, setAmount] = useState("5000");
+  const [months, setMonths] = useState("6");
+  const label =
+    kind === "equipment_purchase"
+      ? "Equipment purchase amount"
+      : "Withdrawal amount";
+  return (
+    <form
+      className="hire-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit({ amount: Number(amount), months: Number(months) });
+      }}
+    >
+      <fieldset disabled={busy}>
+        <legend className="sr-only">One-time cash reduction</legend>
+        <label htmlFor="amount">
+          {label}
+          <div className="input-wrap">
+            <span>$</span>
+            <input
+              id="amount"
+              aria-label={label}
+              type="number"
+              min="0"
+              step="0.01"
+              required
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                onEdit();
+              }}
+            />
+          </div>
+        </label>
+        <label htmlFor="months">
+          Projection period
+          <select
+            id="months"
+            value={months}
+            onChange={(e) => {
+              setMonths(e.target.value);
+              onEdit();
+            }}
+          >
+            {[1, 3, 6, 12, 24].map((n) => (
+              <option key={n} value={n}>
+                {n} {n === 1 ? "month" : "months"}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" disabled={busy} className="primary-button">
+          {busy ? (
+            <>
+              <LoaderCircle size={17} className="animate-spin" />
+              Simulating…
+            </>
+          ) : (
+            <>
+              See the cash impact
+              <ArrowRight size={17} />
+            </>
+          )}
+        </button>
+      </fieldset>
+    </form>
+  );
+}
 export default function ScenarioPanel({ businessId }: { businessId: string }) {
-  const [result, setResult] = useState<HireResult | null>(null);
+  const [result, setResult] = useState<ScenarioResult | null>(null);
+  const [kind, setKind] = useState<ScenarioKind>("hire_employee");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [edited, setEdited] = useState(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
-  async function simulate(inputs: HireInputs) {
+  async function simulate(inputs: HireInputs | OneTimeInputs) {
     controller.current?.abort();
     const request = new AbortController();
     controller.current = request;
@@ -124,7 +211,12 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
     setResult(null);
     setEdited(false);
     try {
-      const next = await api.hire(businessId, inputs, request.signal);
+      const next =
+        kind === "hire_employee"
+          ? await api.hire(businessId, inputs as HireInputs, request.signal)
+          : await api[
+              kind === "equipment_purchase" ? "equipment" : "withdrawal"
+            ](businessId, inputs as OneTimeInputs, request.signal);
       if (!request.signal.aborted) setResult(next);
     } catch (e) {
       if (!request.signal.aborted)
@@ -135,6 +227,21 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
       if (!request.signal.aborted) setBusy(false);
     }
   }
+  function changeScenario(next: ScenarioKind) {
+    controller.current?.abort();
+    setBusy(false);
+    setResult(null);
+    setError("");
+    setEdited(false);
+    setKind(next);
+  }
+  const title =
+    kind === "hire_employee"
+      ? "Hire an Employee"
+      : kind === "equipment_purchase"
+        ? "Equipment Purchase"
+        : "Owner Withdrawal";
+  const label = result ? scenarioLabel(result.scenario) : scenarioLabel(kind);
   const last = result?.cash_projection.at(-1);
   return (
     <section className="scenario-panel" id="what-if">
@@ -143,31 +250,59 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
           <span className="eyebrow">
             <Sparkles size={14} /> A CLEARER VIEW OF YOUR NEXT MOVE
           </span>
-          <h2>What if you grew your team?</h2>
+          <h2>What if you made your next move?</h2>
           <p>Put a number on your next decision before you make it.</p>
         </div>
         <span className="scenario-badge">What if?</span>
       </div>
       <div className="scenario-workspace">
         <div className="scenario-form-panel">
+          <label className="scenario-select-label" htmlFor="scenario">
+            Plan a decision
+          </label>
+          <select
+            className="scenario-select"
+            id="scenario"
+            value={kind}
+            onChange={(e) => changeScenario(e.target.value as ScenarioKind)}
+          >
+            <option value="hire_employee">Hire an Employee</option>
+            <option value="equipment_purchase">Equipment Purchase</option>
+            <option value="owner_withdrawal">Owner Withdrawal</option>
+          </select>
           <div className="scenario-choice">
             <span className="hire-icon">
               <UserRoundPlus size={21} />
             </span>
             <div>
-              <h3>Hire an Employee</h3>
-              <p>Explore the impact of a new team member.</p>
+              <h3>{title}</h3>
+              <p>
+                {kind === "hire_employee"
+                  ? "Explore the impact of a new team member."
+                  : "Explore a one-time reduction in cash."}
+              </p>
             </div>
             <span className="small-tag">Selected</span>
           </div>
-          <HireEmployeeForm
-            busy={busy}
-            onSubmit={simulate}
-            onEdit={() => setEdited(true)}
-          />
+          {kind === "hire_employee" ? (
+            <HireEmployeeForm
+              busy={busy}
+              onSubmit={simulate}
+              onEdit={() => setEdited(true)}
+            />
+          ) : (
+            <OneTimeForm
+              key={kind}
+              kind={kind}
+              busy={busy}
+              onSubmit={simulate}
+              onEdit={() => setEdited(true)}
+            />
+          )}
           <p className="footnote">
-            Wages only. Taxes, benefits, and potential revenue growth aren’t
-            included.
+            {kind === "hire_employee"
+              ? "Wages only. Taxes, benefits, and potential revenue growth aren’t included."
+              : "The amount is deducted once at the start. Ongoing operating cash flow stays unchanged."}
           </p>
         </div>
         <div className="scenario-results" aria-live="polite" aria-busy={busy}>
@@ -203,8 +338,8 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
               </h3>
               <p>
                 {busy
-                  ? "Calculating your baseline and hiring projection."
-                  : "Enter the employee details to compare your projected cash with and without a new hire."}
+                  ? "Calculating your baseline and scenario projection."
+                  : "Enter your scenario details to compare the impact on projected cash."}
               </p>
               {!busy && (
                 <span className="small-tag">
@@ -223,8 +358,18 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
               )}
               <div className="scenario-metrics">
                 <div>
-                  <span>Added monthly cost</span>
-                  <strong>{currency(result.monthly_added_cost)}</strong>
+                  <span>
+                    {result.scenario === "hire_employee"
+                      ? "Added monthly cost"
+                      : "One-time cash reduction"}
+                  </span>
+                  <strong>
+                    {currency(
+                      result.scenario === "hire_employee"
+                        ? result.monthly_added_cost
+                        : result.one_time_cost,
+                    )}
+                  </strong>
                 </div>
                 <div>
                   <span>Baseline cash flow</span>
@@ -232,18 +377,24 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
                   <small>per month</small>
                 </div>
                 <div>
-                  <span>After hiring</span>
+                  <span>{label}</span>
                   <strong>
                     {currency(result.projected_monthly_cash_flow)}
                   </strong>
                   <small>per month</small>
                 </div>
                 <div>
-                  <span>Monthly difference</span>
+                  <span>
+                    {result.scenario === "hire_employee"
+                      ? "Monthly difference"
+                      : "Cash balance difference"}
+                  </span>
                   <strong className="negative">
                     {currency(
-                      result.projected_monthly_cash_flow -
-                        result.baseline_monthly_cash_flow,
+                      result.scenario === "hire_employee"
+                        ? result.projected_monthly_cash_flow -
+                            result.baseline_monthly_cash_flow
+                        : -result.one_time_cost,
                     )}
                   </strong>
                 </div>
@@ -251,7 +402,8 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
               <ScenarioProjectionChart result={result} />
               {last && (
                 <div className="projection-takeaway">
-                  By {monthLabel(last.month)}, projected cash after hiring is{" "}
+                  By {monthLabel(last.month)}, projected cash{" "}
+                  {label.toLowerCase()} is{" "}
                   <strong>{currency(last.scenario)}</strong>, compared with{" "}
                   <strong>{currency(last.baseline)}</strong> at baseline.
                 </div>

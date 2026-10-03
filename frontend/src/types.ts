@@ -61,3 +61,26 @@ export interface HireResult {
   projected_monthly_cash_flow: number;
   cash_projection: { month: string; baseline: number; scenario: number }[];
 }
+
+export type ScenarioKind =
+  "hire_employee" | "equipment_purchase" | "owner_withdrawal";
+export interface OneTimeInputs {
+  amount: number;
+  months: number;
+}
+export interface OneTimeResult {
+  scenario: "equipment_purchase" | "owner_withdrawal";
+  inputs: OneTimeInputs;
+  one_time_cost: number;
+  monthly_added_cost: number;
+  baseline_monthly_cash_flow: number;
+  projected_monthly_cash_flow: number;
+  cash_projection: { month: string; baseline: number; scenario: number }[];
+}
+export type ScenarioResult = HireResult | OneTimeResult;
+export const scenarioLabel = (kind: ScenarioKind) =>
+  kind === "hire_employee"
+    ? "After hiring"
+    : kind === "equipment_purchase"
+      ? "After equipment purchase"
+      : "After withdrawal";

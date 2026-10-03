@@ -10,7 +10,8 @@ import {
   Tooltip,
   ReferenceLine,
 } from "recharts";
-import type { Analysis, HireResult } from "../types";
+import type { Analysis, ScenarioResult } from "../types";
+import { scenarioLabel } from "../types";
 import { currency, compactCurrency, monthLabel } from "../format";
 import { EmptyState } from "./Shared";
 const tooltipStyle = {
@@ -151,7 +152,12 @@ export function CashFlowChart({ analysis }: { analysis: Analysis }) {
     </section>
   );
 }
-export function ScenarioProjectionChart({ result }: { result: HireResult }) {
+export function ScenarioProjectionChart({
+  result,
+}: {
+  result: ScenarioResult;
+}) {
+  const label = scenarioLabel(result.scenario);
   return (
     <>
       <div className="panel-heading projection-heading">
@@ -166,14 +172,14 @@ export function ScenarioProjectionChart({ result }: { result: HireResult }) {
           </span>
           <span>
             <i className="dot violet" />
-            After hiring
+            {label}
           </span>
         </div>
       </div>
       <div
         className="chart projection-chart"
         role="img"
-        aria-label="Projected baseline cash balance compared with cash balance after hiring"
+        aria-label={`Projected baseline cash balance compared with ${label.toLowerCase()}`}
       >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
@@ -216,7 +222,7 @@ export function ScenarioProjectionChart({ result }: { result: HireResult }) {
             <Line
               type="monotone"
               dataKey="scenario"
-              name="After hiring"
+              name={label}
               stroke="#8270b3"
               strokeWidth={3}
               dot={{ r: 3 }}
@@ -233,7 +239,7 @@ export function ScenarioProjectionChart({ result }: { result: HireResult }) {
               <tr>
                 <th>Month</th>
                 <th>Baseline</th>
-                <th>After hiring</th>
+                <th>{label}</th>
               </tr>
             </thead>
             <tbody>

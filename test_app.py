@@ -126,6 +126,26 @@ class AppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers["access-control-allow-origin"], "http://localhost:5173")
 
+    def test_one_time_scenario_endpoints(self):
+        self.service.get_customer_accounts.return_value = [{"_id": "a", "balance": 24000}]
+        self.service.get_deposits.return_value = [{"amount": 10000, "transaction_date": "2026-10-01"}]
+        self.service.get_purchases.return_value = [{"amount": 3000, "purchase_date": "2026-10-02"}]
+        self.service.get_bills.return_value = []
+        for route, kind in [("equipment", "equipment_purchase"), ("withdrawal", "owner_withdrawal")]:
+            response = self.client.post(f"/businesses/c/scenarios/{route}", json={"amount": 5000, "months": 2})
+            self.assertEqual(response.status_code, 200)
+            result = response.json()
+            self.assertEqual(result["scenario"], kind)
+            self.assertEqual(result["cash_projection"][0]["scenario"], 26000)
+            self.assertEqual(result["cash_projection"][1]["scenario"], 33000)
+            for payload in ({"amount": -1}, {"amount": True}, {"amount": 1, "months": 0}, {}):
+                self.assertEqual(self.client.post(f"/businesses/c/scenarios/{route}", json=payload).status_code, 422)
+            self.service.get_customer_accounts.side_effect = NessieServiceError("secret", 500)
+            response = self.client.post(f"/businesses/c/scenarios/{route}", json={"amount": 1})
+            self.assertEqual(response.status_code, 502)
+            self.assertNotIn("secret", response.text)
+            self.service.get_customer_accounts.side_effect = None
+
 
 if __name__ == "__main__":
     unittest.main()
