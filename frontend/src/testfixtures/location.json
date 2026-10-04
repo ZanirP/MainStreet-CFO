@@ -1,0 +1,779 @@
+{
+  "analysis": {
+    "summary": {
+      "revenue": 114500.0,
+      "expenses": 115000.0,
+      "net_cash_flow": -500.0,
+      "cash_balance": 9000.0,
+      "margin": -0.44
+    },
+    "expense_breakdown": {
+      "Bills": 75950.0,
+      "Purchases": 39050.0
+    },
+    "largest_expenses": [
+      {
+        "id": null,
+        "description": "Staff payroll",
+        "category": "Bills",
+        "amount": 10000.0,
+        "date": "2026-09-28"
+      },
+      {
+        "id": null,
+        "description": "Staff payroll",
+        "category": "Bills",
+        "amount": 9600.0,
+        "date": "2026-08-28"
+      },
+      {
+        "id": null,
+        "description": "Staff payroll",
+        "category": "Bills",
+        "amount": 9200.0,
+        "date": "2026-07-28"
+      },
+      {
+        "id": null,
+        "description": "Staff payroll",
+        "category": "Bills",
+        "amount": 9000.0,
+        "date": "2026-06-28"
+      },
+      {
+        "id": null,
+        "description": "Staff payroll",
+        "category": "Bills",
+        "amount": 8800.0,
+        "date": "2026-05-28"
+      }
+    ],
+    "monthly_revenue": [
+      {
+        "month": "2026-05",
+        "amount": 18500.0
+      },
+      {
+        "month": "2026-06",
+        "amount": 20500.0
+      },
+      {
+        "month": "2026-07",
+        "amount": 23000.0
+      },
+      {
+        "month": "2026-08",
+        "amount": 25500.0
+      },
+      {
+        "month": "2026-09",
+        "amount": 27000.0
+      }
+    ],
+    "monthly_expenses": [
+      {
+        "month": "2026-05",
+        "amount": 21500.0
+      },
+      {
+        "month": "2026-06",
+        "amount": 22000.0
+      },
+      {
+        "month": "2026-07",
+        "amount": 22500.0
+      },
+      {
+        "month": "2026-08",
+        "amount": 23500.0
+      },
+      {
+        "month": "2026-09",
+        "amount": 25500.0
+      }
+    ],
+    "trends": {
+      "revenue_change_percent": 5.88,
+      "expense_change_percent": 8.51
+    },
+    "recurring_bills": [
+      {
+        "id": null,
+        "payee": "Demo Grove Properties",
+        "nickname": "Rent",
+        "status": "recurring",
+        "payment_amount": 3200.0,
+        "payment_date": "2026-10-01",
+        "recurring_date": 1
+      },
+      {
+        "id": null,
+        "payee": "Demo Michigan Utilities",
+        "nickname": "Utilities",
+        "status": "recurring",
+        "payment_amount": 1050.0,
+        "payment_date": "2026-10-10",
+        "recurring_date": 10
+      },
+      {
+        "id": null,
+        "payee": "Demo Business Internet",
+        "nickname": "Internet",
+        "status": "recurring",
+        "payment_amount": 100.0,
+        "payment_date": "2026-10-12",
+        "recurring_date": 12
+      },
+      {
+        "id": null,
+        "payee": "Demo Business Insurance",
+        "nickname": "Insurance",
+        "status": "recurring",
+        "payment_amount": 350.0,
+        "payment_date": "2026-10-15",
+        "recurring_date": 15
+      },
+      {
+        "id": null,
+        "payee": "Demo Coffee POS",
+        "nickname": "POS / software",
+        "status": "recurring",
+        "payment_amount": 200.0,
+        "payment_date": "2026-10-20",
+        "recurring_date": 20
+      },
+      {
+        "id": null,
+        "payee": "Demo Business Equipment Finance",
+        "nickname": "Debt payment: Demo Arbor startup buildout and espresso equipment",
+        "status": "recurring",
+        "payment_amount": 1200.0,
+        "payment_date": "2026-10-27",
+        "recurring_date": 27
+      },
+      {
+        "id": null,
+        "payee": "Arbor Coffee Payroll",
+        "nickname": "Staff payroll",
+        "status": "recurring",
+        "payment_amount": 10000.0,
+        "payment_date": "2026-10-28",
+        "recurring_date": 28
+      }
+    ],
+    "health": {
+      "has_revenue": true,
+      "positive_cash_flow": false,
+      "expenses_exceed_revenue": true,
+      "has_cash_reserve": true,
+      "upcoming_bill_total": 16100.0,
+      "can_cover_upcoming_bills": false,
+      "bill_coverage_ratio": 0.56
+    },
+    "signals": [
+      {
+        "id": "expenses_trend",
+        "level": "caution",
+        "title": "Expenses is growing",
+        "explanation": "2026-09 vs 2026-08: +8.51%. Calendar gaps count as zero; the latest month may be partial.",
+        "value": 8.51,
+        "unit": "percent"
+      },
+      {
+        "id": "expense_growth",
+        "level": "caution",
+        "title": "Expenses are growing faster than revenue",
+        "explanation": "Revenue changed +5.88% and expenses changed +8.51% over the same latest two months.",
+        "value": 2.63,
+        "unit": "percentage_points"
+      },
+      {
+        "id": "recurring_obligations",
+        "level": "caution",
+        "title": "Recurring obligations relative to cash",
+        "explanation": "Listed recurring bills total $16,100.00; cash is $9,000.00. That is 178.89% of cash. This sums listed bills once, not an inferred payment schedule.",
+        "value": 178.89,
+        "unit": "percent"
+      },
+      {
+        "id": "cash_coverage",
+        "level": "caution",
+        "title": "Cash coverage of average expenses",
+        "explanation": "Average dated monthly expenses are $23,000.00. Cash covers 0.39 months at that spending level, assuming no new revenue. This is a coverage measure, not a runway forecast.",
+        "value": 0.39,
+        "unit": "months"
+      },
+      {
+        "id": "debt_payments",
+        "level": "caution",
+        "title": "Debt payments compete with cash",
+        "explanation": "Known active loan payments total $1,200.00/month. Average cash flow before linked debt payments covers them 0.92 times; after linked payments it is $-100.00/month. The latest month's realized net cash flow is $1,500.00. Payment amounts include unknown principal/interest portions; this is cash-flow coverage, not lender underwriting.",
+        "value": 0.92,
+        "unit": "ratio"
+      },
+      {
+        "id": "revenue_trend",
+        "level": "positive",
+        "title": "Revenue is growing",
+        "explanation": "2026-09 vs 2026-08: +5.88%. Calendar gaps count as zero; the latest month may be partial.",
+        "value": 5.88,
+        "unit": "percent"
+      }
+    ],
+    "debt": {
+      "data_available": true,
+      "complete": true,
+      "loans": [
+        {
+          "id": null,
+          "type": "business",
+          "status": "active",
+          "description": "Demo Arbor startup buildout and espresso equipment",
+          "creation_date": null,
+          "reported_loan_amount": 48000.0,
+          "monthly_payment": 1200.0,
+          "included_in_obligations": true,
+          "payment_link_verified": true,
+          "outstanding_balance": null,
+          "apr": null,
+          "remaining_term_months": null
+        }
+      ],
+      "active_loan_count": 1,
+      "reported_active_loan_amount": 48000.0,
+      "monthly_payment_total": 1200.0,
+      "all_active_payments_linked": true,
+      "linked_monthly_payment": 1200.0,
+      "historical_average_linked_payment": 1200.0,
+      "forecast_expense_adjustment": 0.0,
+      "average_monthly_cash_flow_after_linked_payments": -100.0,
+      "latest_monthly_cash_flow": 1500.0,
+      "payment_coverage_ratio": 0.92,
+      "payment_coverage_basis": "Average and latest payment coverage use cash flow BEFORE linked loan payments divided by current monthly LOAN payments only. They do not use cash flow after payments or cover all operating bills. This is cash-flow coverage, not lender DSCR or underwriting.",
+      "latest_payment_coverage_ratio": 2.25,
+      "latest_monthly_cash_flow_after_linked_payments": 1500.0,
+      "cash_to_monthly_payment_ratio": 7.5,
+      "conservative_obligation_exposure": 16100.0,
+      "cash_covers_conservative_obligation_exposure": false,
+      "basis": "Active means status 'active'; closed/paid/cancelled loans are excluded, other statuses are unresolved. Totals of known active values may be incomplete. Linked loan payments replace their historical average in projections; unlinked payment inclusion is unknown and historical cash flow is unchanged. Conservative exposure sums bills once plus unlinked active monthly payments; these may overlap with untagged bills and schedules may differ, so this is not a verified total payable.",
+      "limitations": "Reported loan amount is not a verified outstanding balance. APR, interest cost, remaining term and amortization are unavailable. Payments stay constant throughout projections as an explicit assumption; no approval or new borrowing is inferred."
+    },
+    "location_estimates": {
+      "basis": "Full dated calendar averages; gaps count as zero. Categories use explicit description keywords, not Nessie category fields. Other includes insurance, software, internet, maintenance and unmatched expenses. Linked existing loan payments are excluded; unlinked payments may remain. These are current-business references, not new-location costs or guaranteed revenue.",
+      "months_of_history": 5,
+      "monthly_revenue": 22900.0,
+      "costs": {
+        "rent": {
+          "amount": 3200.0,
+          "source_descriptions": [
+            "Rent"
+          ]
+        },
+        "payroll": {
+          "amount": 9320.0,
+          "source_descriptions": [
+            "Staff payroll"
+          ]
+        },
+        "utilities": {
+          "amount": 820.0,
+          "source_descriptions": [
+            "Utilities"
+          ]
+        },
+        "inventory": {
+          "amount": 6440.0,
+          "source_descriptions": [
+            "Bakery inventory / invoice 1",
+            "Bakery inventory / invoice 2",
+            "Bakery inventory / invoice 3",
+            "Bakery inventory / invoice 4",
+            "Coffee beans / invoice 1",
+            "Coffee beans / invoice 2",
+            "Cups and packaging / invoice 1",
+            "Cups and packaging / invoice 2"
+          ]
+        },
+        "other": {
+          "amount": 2020.0,
+          "source_descriptions": [
+            "Cleaning supplies / invoice 1",
+            "Equipment maintenance / invoice 1",
+            "Espresso-machine pump repair and service / invoice 1",
+            "Insurance",
+            "Internet",
+            "Other operating supplies / invoice 1",
+            "POS / software"
+          ]
+        }
+      }
+    }
+  },
+  "result": {
+    "monthly_added_cost": 4567.74,
+    "incremental_monthly_operating_cost": 4000.0,
+    "baseline_monthly_cash_flow": -100.0,
+    "projected_monthly_cash_flow": 15332.26,
+    "mature_flow_basis": "Full mature revenue while financing payments are active; ramp months differ and payments stop after term.",
+    "cash_projection": [
+      {
+        "month": "2026-10",
+        "baseline": 8900.0,
+        "scenario": 8998.93,
+        "scenario_cash_negative": false,
+        "cash_funded": -18433.33
+      },
+      {
+        "month": "2026-11",
+        "baseline": 8800.0,
+        "scenario": 17664.52,
+        "scenario_cash_negative": false,
+        "cash_funded": -9200.0
+      },
+      {
+        "month": "2026-12",
+        "baseline": 8700.0,
+        "scenario": 32996.78,
+        "scenario_cash_negative": false,
+        "cash_funded": 6700.0
+      },
+      {
+        "month": "2027-01",
+        "baseline": 8600.0,
+        "scenario": 48329.04,
+        "scenario_cash_negative": false,
+        "cash_funded": 22600.0
+      },
+      {
+        "month": "2027-02",
+        "baseline": 8500.0,
+        "scenario": 63661.3,
+        "scenario_cash_negative": false,
+        "cash_funded": 38500.0
+      },
+      {
+        "month": "2027-03",
+        "baseline": 8400.0,
+        "scenario": 78993.57,
+        "scenario_cash_negative": false,
+        "cash_funded": 54400.0
+      }
+    ],
+    "breaking_point": {
+      "basis": "Exact ramp-month cash trajectory, including opening cash and monthly hypothetical loan payments. No safety guarantee.",
+      "cash_after_decision": 7000.0,
+      "monthly_cash_flow_nonnegative": true,
+      "cash_runway_months": null,
+      "runway_basis": "Interpolated first cash depletion within this horizon; null means no depletion observed, not infinite runway. Intra-month timing otherwise unavailable.",
+      "negative_immediately": false,
+      "first_negative_month_index": null,
+      "first_negative_month": null,
+      "negative_within_horizon": false,
+      "minimum_cash_balance_within_horizon": 7000.0,
+      "projection_months": 6,
+      "cash_buffer_amount": 27567.74,
+      "cash_buffer_assumption": "Illustrative reserve: one month of combined average existing cash expenses, new-location expenses and hypothetical debt service; required from opening onward.",
+      "maximum_one_time_amount_preserving_buffer": null,
+      "maximum_one_time_amount_preserving_initial_buffer": null,
+      "buffer_preserved_through_horizon": false,
+      "minimum_cash_month": "opening",
+      "minimum_mature_revenue_preserving_buffer": null,
+      "buffer_revenue_requirement_unavailable_reason": "Opening cash is already below the illustrative buffer; future revenue cannot fix that instant.",
+      "location_standalone_break_even_revenue": 4567.74,
+      "minimum_additional_revenue_for_business_break_even": 4667.74,
+      "break_even_basis": "Mature monthly cash-flow break-even while hypothetical debt payments are active; costs are cash expenses, not accounting profit.",
+      "mature_revenue_downside_percent": 76.66
+    },
+    "monthly_operations": [
+      {
+        "month": "2026-10",
+        "ramp_percent": 33.33,
+        "additional_revenue": 6666.67,
+        "operating_cost": 4000.0,
+        "hypothetical_debt_payment": 567.74,
+        "combined_cash_flow": 1998.93
+      },
+      {
+        "month": "2026-11",
+        "ramp_percent": 66.67,
+        "additional_revenue": 13333.33,
+        "operating_cost": 4000.0,
+        "hypothetical_debt_payment": 567.74,
+        "combined_cash_flow": 8665.59
+      },
+      {
+        "month": "2026-12",
+        "ramp_percent": 100.0,
+        "additional_revenue": 20000.0,
+        "operating_cost": 4000.0,
+        "hypothetical_debt_payment": 567.74,
+        "combined_cash_flow": 15332.26
+      },
+      {
+        "month": "2027-01",
+        "ramp_percent": 100.0,
+        "additional_revenue": 20000.0,
+        "operating_cost": 4000.0,
+        "hypothetical_debt_payment": 567.74,
+        "combined_cash_flow": 15332.26
+      },
+      {
+        "month": "2027-02",
+        "ramp_percent": 100.0,
+        "additional_revenue": 20000.0,
+        "operating_cost": 4000.0,
+        "hypothetical_debt_payment": 567.74,
+        "combined_cash_flow": 15332.26
+      },
+      {
+        "month": "2027-03",
+        "ramp_percent": 100.0,
+        "additional_revenue": 20000.0,
+        "operating_cost": 4000.0,
+        "hypothetical_debt_payment": 567.74,
+        "combined_cash_flow": 15332.26
+      }
+    ],
+    "scenario": "open_location",
+    "inputs": {
+      "upfront_cost": 30000.0,
+      "monthly_revenue": 20000.0,
+      "rent": 1000.0,
+      "payroll": 1500.0,
+      "utilities": 250.0,
+      "inventory": 750.0,
+      "other": 500.0,
+      "financing_amount": 28000.0,
+      "annual_interest_percent": 8.0,
+      "ramp_months": 3,
+      "months": 6,
+      "financing_term_months": 60,
+      "stress_test": true
+    },
+    "one_time_cost": 30000.0,
+    "cash_funding_amount": 2000.0,
+    "debt_assumptions": {
+      "forecast_expense_adjustment": 0.0,
+      "fixed_linked_monthly_payment": 1200.0,
+      "historical_average_linked_payment": 1200.0,
+      "all_active_payments_linked": true,
+      "basis": "Existing Nessie loan payments are included once in current-business baseline and held fixed in stress. Hypothetical expansion financing is modeled separately, with no real loan creation."
+    },
+    "assumptions": {
+      "basis": "Existing business keeps its full historical average cash flow, with verified debt counted once. New-location costs and mature revenue are user assumptions. All costs start in month one; revenue ramps linearly to full revenue in ramp_months. No cannibalization, seasonality, taxes, inflation, delays or extra working capital is modeled.",
+      "financing": "Hypothetical fixed-rate fully amortizing loan, funded at opening; monthly payments start immediately and stop after the entered term. No financing fees or approval are assumed.",
+      "historical_starting_estimates": {
+        "basis": "Full dated calendar averages; gaps count as zero. Categories use explicit description keywords, not Nessie category fields. Other includes insurance, software, internet, maintenance and unmatched expenses. Linked existing loan payments are excluded; unlinked payments may remain. These are current-business references, not new-location costs or guaranteed revenue.",
+        "months_of_history": 5,
+        "monthly_revenue": 22900.0,
+        "costs": {
+          "rent": {
+            "amount": 3200.0,
+            "source_descriptions": [
+              "Rent"
+            ]
+          },
+          "payroll": {
+            "amount": 9320.0,
+            "source_descriptions": [
+              "Staff payroll"
+            ]
+          },
+          "utilities": {
+            "amount": 820.0,
+            "source_descriptions": [
+              "Utilities"
+            ]
+          },
+          "inventory": {
+            "amount": 6440.0,
+            "source_descriptions": [
+              "Bakery inventory / invoice 1",
+              "Bakery inventory / invoice 2",
+              "Bakery inventory / invoice 3",
+              "Bakery inventory / invoice 4",
+              "Coffee beans / invoice 1",
+              "Coffee beans / invoice 2",
+              "Cups and packaging / invoice 1",
+              "Cups and packaging / invoice 2"
+            ]
+          },
+          "other": {
+            "amount": 2020.0,
+            "source_descriptions": [
+              "Cleaning supplies / invoice 1",
+              "Equipment maintenance / invoice 1",
+              "Espresso-machine pump repair and service / invoice 1",
+              "Insurance",
+              "Internet",
+              "Other operating supplies / invoice 1",
+              "POS / software"
+            ]
+          }
+        }
+      }
+    },
+    "funding_comparison": {
+      "cash_funded": {
+        "monthly_added_cost": 4000.0,
+        "incremental_monthly_operating_cost": 4000.0,
+        "baseline_monthly_cash_flow": -100.0,
+        "projected_monthly_cash_flow": 15900.0,
+        "mature_flow_basis": "Full mature revenue while financing payments are active; ramp months differ and payments stop after term.",
+        "cash_projection": [
+          {
+            "month": "2026-10",
+            "baseline": 8900.0,
+            "scenario": -18433.33,
+            "scenario_cash_negative": true
+          },
+          {
+            "month": "2026-11",
+            "baseline": 8800.0,
+            "scenario": -9200.0,
+            "scenario_cash_negative": true
+          },
+          {
+            "month": "2026-12",
+            "baseline": 8700.0,
+            "scenario": 6700.0,
+            "scenario_cash_negative": false
+          },
+          {
+            "month": "2027-01",
+            "baseline": 8600.0,
+            "scenario": 22600.0,
+            "scenario_cash_negative": false
+          },
+          {
+            "month": "2027-02",
+            "baseline": 8500.0,
+            "scenario": 38500.0,
+            "scenario_cash_negative": false
+          },
+          {
+            "month": "2027-03",
+            "baseline": 8400.0,
+            "scenario": 54400.0,
+            "scenario_cash_negative": false
+          }
+        ],
+        "breaking_point": {
+          "basis": "Exact ramp-month cash trajectory, including opening cash and monthly hypothetical loan payments. No safety guarantee.",
+          "cash_after_decision": -21000.0,
+          "monthly_cash_flow_nonnegative": true,
+          "cash_runway_months": 0.0,
+          "runway_basis": "Interpolated first cash depletion within this horizon; null means no depletion observed, not infinite runway. Intra-month timing otherwise unavailable.",
+          "negative_immediately": true,
+          "first_negative_month_index": 0,
+          "first_negative_month": null,
+          "negative_within_horizon": true,
+          "minimum_cash_balance_within_horizon": -21000.0,
+          "projection_months": 6,
+          "cash_buffer_amount": 27000.0,
+          "cash_buffer_assumption": "Illustrative reserve: one month of combined average existing cash expenses, new-location expenses and hypothetical debt service; required from opening onward.",
+          "maximum_one_time_amount_preserving_buffer": null,
+          "maximum_one_time_amount_preserving_initial_buffer": null,
+          "buffer_preserved_through_horizon": false,
+          "minimum_cash_month": "opening",
+          "minimum_mature_revenue_preserving_buffer": null,
+          "buffer_revenue_requirement_unavailable_reason": "Opening cash is already below the illustrative buffer; future revenue cannot fix that instant.",
+          "location_standalone_break_even_revenue": 4000.0,
+          "minimum_additional_revenue_for_business_break_even": 4100.0,
+          "break_even_basis": "Mature monthly cash-flow break-even while hypothetical debt payments are active; costs are cash expenses, not accounting profit.",
+          "mature_revenue_downside_percent": 79.5
+        },
+        "monthly_operations": [
+          {
+            "month": "2026-10",
+            "ramp_percent": 33.33,
+            "additional_revenue": 6666.67,
+            "operating_cost": 4000.0,
+            "hypothetical_debt_payment": 0.0,
+            "combined_cash_flow": 2566.67
+          },
+          {
+            "month": "2026-11",
+            "ramp_percent": 66.67,
+            "additional_revenue": 13333.33,
+            "operating_cost": 4000.0,
+            "hypothetical_debt_payment": 0.0,
+            "combined_cash_flow": 9233.33
+          },
+          {
+            "month": "2026-12",
+            "ramp_percent": 100.0,
+            "additional_revenue": 20000.0,
+            "operating_cost": 4000.0,
+            "hypothetical_debt_payment": 0.0,
+            "combined_cash_flow": 15900.0
+          },
+          {
+            "month": "2027-01",
+            "ramp_percent": 100.0,
+            "additional_revenue": 20000.0,
+            "operating_cost": 4000.0,
+            "hypothetical_debt_payment": 0.0,
+            "combined_cash_flow": 15900.0
+          },
+          {
+            "month": "2027-02",
+            "ramp_percent": 100.0,
+            "additional_revenue": 20000.0,
+            "operating_cost": 4000.0,
+            "hypothetical_debt_payment": 0.0,
+            "combined_cash_flow": 15900.0
+          },
+          {
+            "month": "2027-03",
+            "ramp_percent": 100.0,
+            "additional_revenue": 20000.0,
+            "operating_cost": 4000.0,
+            "hypothetical_debt_payment": 0.0,
+            "combined_cash_flow": 15900.0
+          }
+        ]
+      },
+      "selected_funding": {
+        "minimum_cash": 7000.0,
+        "ending_cash": 78993.57
+      }
+    },
+    "hypothetical_financing": {
+      "amount": 28000.0,
+      "monthly_payment": 567.74,
+      "total_interest_over_entered_term": 6064.34,
+      "annual_interest_percent": 8.0,
+      "term_months": 60
+    },
+    "stress_test": {
+      "monthly_added_cost": 4967.74,
+      "incremental_monthly_operating_cost": 4400.0,
+      "baseline_monthly_cash_flow": -4570.0,
+      "projected_monthly_cash_flow": 8462.26,
+      "mature_flow_basis": "Full mature revenue while financing payments are active; ramp months differ and payments stop after term.",
+      "cash_projection": [
+        {
+          "month": "2026-10",
+          "baseline": 4430.0,
+          "scenario": 3462.26,
+          "scenario_cash_negative": false
+        },
+        {
+          "month": "2026-11",
+          "baseline": -140.0,
+          "scenario": 5924.52,
+          "scenario_cash_negative": false
+        },
+        {
+          "month": "2026-12",
+          "baseline": -4710.0,
+          "scenario": 14386.78,
+          "scenario_cash_negative": false
+        },
+        {
+          "month": "2027-01",
+          "baseline": -9280.0,
+          "scenario": 22849.04,
+          "scenario_cash_negative": false
+        },
+        {
+          "month": "2027-02",
+          "baseline": -13850.0,
+          "scenario": 31311.3,
+          "scenario_cash_negative": false
+        },
+        {
+          "month": "2027-03",
+          "baseline": -18420.0,
+          "scenario": 39773.57,
+          "scenario_cash_negative": false
+        }
+      ],
+      "breaking_point": {
+        "basis": "Exact ramp-month cash trajectory, including opening cash and monthly hypothetical loan payments. No safety guarantee.",
+        "cash_after_decision": 7000.0,
+        "monthly_cash_flow_nonnegative": false,
+        "cash_runway_months": null,
+        "runway_basis": "Interpolated first cash depletion within this horizon; null means no depletion observed, not infinite runway. Intra-month timing otherwise unavailable.",
+        "negative_immediately": false,
+        "first_negative_month_index": null,
+        "first_negative_month": null,
+        "negative_within_horizon": false,
+        "minimum_cash_balance_within_horizon": 3462.26,
+        "projection_months": 6,
+        "cash_buffer_amount": 30147.74,
+        "cash_buffer_assumption": "Illustrative reserve: one month of combined average existing cash expenses, new-location expenses and hypothetical debt service; required from opening onward.",
+        "maximum_one_time_amount_preserving_buffer": null,
+        "maximum_one_time_amount_preserving_initial_buffer": null,
+        "buffer_preserved_through_horizon": false,
+        "minimum_cash_month": "2026-10",
+        "minimum_mature_revenue_preserving_buffer": null,
+        "buffer_revenue_requirement_unavailable_reason": "Opening cash is already below the illustrative buffer; future revenue cannot fix that instant.",
+        "location_standalone_break_even_revenue": 4967.74,
+        "minimum_additional_revenue_for_business_break_even": 9537.74,
+        "break_even_basis": "Mature monthly cash-flow break-even while hypothetical debt payments are active; costs are cash expenses, not accounting profit.",
+        "mature_revenue_downside_percent": 47.01
+      },
+      "monthly_operations": [
+        {
+          "month": "2026-10",
+          "ramp_percent": 33.33,
+          "additional_revenue": 6000.0,
+          "operating_cost": 4400.0,
+          "hypothetical_debt_payment": 567.74,
+          "combined_cash_flow": -3537.74
+        },
+        {
+          "month": "2026-11",
+          "ramp_percent": 66.67,
+          "additional_revenue": 12000.0,
+          "operating_cost": 4400.0,
+          "hypothetical_debt_payment": 567.74,
+          "combined_cash_flow": 2462.26
+        },
+        {
+          "month": "2026-12",
+          "ramp_percent": 100.0,
+          "additional_revenue": 18000.0,
+          "operating_cost": 4400.0,
+          "hypothetical_debt_payment": 567.74,
+          "combined_cash_flow": 8462.26
+        },
+        {
+          "month": "2027-01",
+          "ramp_percent": 100.0,
+          "additional_revenue": 18000.0,
+          "operating_cost": 4400.0,
+          "hypothetical_debt_payment": 567.74,
+          "combined_cash_flow": 8462.26
+        },
+        {
+          "month": "2027-02",
+          "ramp_percent": 100.0,
+          "additional_revenue": 18000.0,
+          "operating_cost": 4400.0,
+          "hypothetical_debt_payment": 567.74,
+          "combined_cash_flow": 8462.26
+        },
+        {
+          "month": "2027-03",
+          "ramp_percent": 100.0,
+          "additional_revenue": 18000.0,
+          "operating_cost": 4400.0,
+          "hypothetical_debt_payment": 567.74,
+          "combined_cash_flow": 8462.26
+        }
+      ],
+      "assumptions": {
+        "revenue_reduction_percent": 10,
+        "expense_increase_percent": 10,
+        "average_monthly_revenue": 22900.0,
+        "average_monthly_expenses": 23000.0,
+        "stressed_monthly_revenue": 20610.0,
+        "stressed_monthly_expenses": 25180.0,
+        "basis": "Existing and new-location revenue 10% lower; positive operating expenses 10% higher. Linked existing and hypothetical loan payments, upfront cost and ramp stay fixed."
+      }
+    }
+  }
+}

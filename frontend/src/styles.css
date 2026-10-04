@@ -408,6 +408,50 @@ h1 {
   min-width: 0;
   scroll-margin-top: 20px;
 }
+.debt-panel {
+  margin-top: 20px;
+}
+.location-workflow .hire-form input[type="number"] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-top: 7px;
+  padding: 10px 12px;
+  border: 1px solid #dfe5d7;
+  border-radius: 7px;
+  background: white;
+  color: #425739;
+  font-size: 12px;
+}
+.location-workflow .hire-form fieldset {
+  grid-template-columns: 1fr;
+}
+.location-workflow .footnote {
+  display: block;
+  line-height: 1.7;
+}
+.location-reference {
+  margin: 18px 0;
+  font-size: 11px;
+  color: #849174;
+}
+.location-reference summary {
+  cursor: pointer;
+}
+.location-financing {
+  display: grid;
+  gap: 14px;
+}
+.form-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.debt-panel .transaction strong small {
+  color: #95a087;
+  font-size: 10px;
+  font-weight: 400;
+}
 .panel-heading {
   display: flex;
   align-items: flex-start;

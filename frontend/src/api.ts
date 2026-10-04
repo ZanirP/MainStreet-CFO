@@ -6,6 +6,8 @@ import type {
   HireResult,
   OneTimeInputs,
   OneTimeResult,
+  LocationInputs,
+  LocationResult,
 } from "./types";
 const BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
@@ -44,14 +46,27 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return data as T;
 }
 export const api = {
-  askCFO: (id: string, question: string, signal?: AbortSignal) =>
+  askCFO: (
+    id: string,
+    question: string,
+    signal?: AbortSignal,
+    locationInputs?: LocationInputs,
+  ) =>
     request<CFOAnswer>(`/businesses/${encodeURIComponent(id)}/cfo/ask`, {
       method: "POST",
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({
+        question,
+        ...(locationInputs ? { location_inputs: locationInputs } : {}),
+      }),
       signal,
     }),
   businesses: (signal?: AbortSignal) =>
     request<Business[]>("/businesses", { signal }),
+  location: (id: string, inputs: LocationInputs, signal?: AbortSignal) =>
+    request<LocationResult>(
+      `/businesses/${encodeURIComponent(id)}/scenarios/location`,
+      { method: "POST", body: JSON.stringify(inputs), signal },
+    ),
   analysis: (id: string, signal?: AbortSignal) =>
     request<Analysis>(`/businesses/${encodeURIComponent(id)}/analysis`, {
       signal,

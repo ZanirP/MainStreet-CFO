@@ -10,7 +10,7 @@ import {
   Tooltip,
   ReferenceLine,
 } from "recharts";
-import type { Analysis, ScenarioResult } from "../types";
+import type { Analysis, ScenarioResult, LocationCase } from "../types";
 import { scenarioLabel } from "../types";
 import { currency, compactCurrency, monthLabel } from "../format";
 import { EmptyState } from "./Shared";
@@ -156,11 +156,12 @@ export function ScenarioProjectionChart({
   result,
   stressCase = false,
 }: {
-  result: ScenarioResult;
+  result: ScenarioResult | (LocationCase & { scenario: "open_location" });
   stressCase?: boolean;
 }) {
   const label = `${stressCase ? "Stressed · " : ""}${scenarioLabel(result.scenario)}`;
   const baselineLabel = stressCase ? "Stressed baseline" : "Baseline";
+  const cashFunded = result.cash_projection.some((row) => "cash_funded" in row);
   return (
     <>
       <div className="panel-heading projection-heading">
@@ -177,6 +178,12 @@ export function ScenarioProjectionChart({
             <i className="dot violet" />
             {label}
           </span>
+          {cashFunded && (
+            <span>
+              <i className="dot amber" />
+              Cash-funded expansion
+            </span>
+          )}
         </div>
       </div>
       <div
@@ -222,6 +229,17 @@ export function ScenarioProjectionChart({
               dot={{ r: 3 }}
               isAnimationActive={false}
             />
+            {cashFunded && (
+              <Line
+                type="monotone"
+                dataKey="cash_funded"
+                name="Cash-funded expansion"
+                stroke="#c19148"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                isAnimationActive={false}
+              />
+            )}
             <Line
               type="monotone"
               dataKey="scenario"
@@ -243,6 +261,7 @@ export function ScenarioProjectionChart({
                 <th>Month</th>
                 <th>{baselineLabel}</th>
                 <th>{label}</th>
+                {cashFunded && <th>Cash-funded expansion</th>}
               </tr>
             </thead>
             <tbody>
@@ -251,6 +270,15 @@ export function ScenarioProjectionChart({
                   <td>{monthLabel(r.month)}</td>
                   <td>{currency(r.baseline)}</td>
                   <td>{currency(r.scenario)}</td>
+                  {cashFunded && (
+                    <td>
+                      {currency(
+                        "cash_funded" in r && typeof r.cash_funded === "number"
+                          ? r.cash_funded
+                          : 0,
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

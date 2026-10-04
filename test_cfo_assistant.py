@@ -53,6 +53,16 @@ class CFOTests(unittest.TestCase):
             self.assertEqual(result["cash_projection"][-1]["scenario"], 66000 if kind == "projection" else 56000)
             self.assertFalse(context["assumptions"]["default_projection_months"])
 
+    def test_dated_monthly_net_and_margin_zero_revenue_and_missing_series(self):
+        source = {"monthly_revenue": [{"month": "2026-05", "amount": 100}, {"month": "2026-07", "amount": 0}],
+                  "monthly_expenses": [{"month": "2026-05", "amount": 40}, {"month": "2026-06", "amount": 50}]}
+        original = copy.deepcopy(source)
+        rows = CFOAssistant._monthly_performance(source)
+        self.assertEqual([row["net_cash_flow"] for row in rows], [60, -50, 0])
+        self.assertEqual([row["margin_percent"] for row in rows], [60, None, None])
+        self.assertEqual(source, original)
+        self.assertEqual(CFOAssistant._monthly_performance({"monthly_revenue": None}), [])
+
     def test_missing_unsupported_and_unverified_inputs(self):
         for source, question, inputs in (
             (analysis(), "hire", intent()),
@@ -74,6 +84,14 @@ class CFOTests(unittest.TestCase):
         for text in (None, "", "Cash is 9000", "Cash is [[f999]]", "[[f0]] will double", "[[f0]] lasts three months"):
             with self.assertRaises(CFOAssistantError):
                 self.assistant._ground_answer(text, facts)
+
+    def test_signal_fact_display_preserves_explicit_units(self):
+        facts = self.assistant._facts({"signals": [
+            {"value": -2.04, "unit": "percent"},
+            {"value": 5.96, "unit": "percentage_points"},
+            {"value": 0.3, "unit": "months"},
+        ]})
+        self.assertEqual([f["display"] for f in facts], ["-2.04%", "5.96 percentage points", "0.3 months"])
 
     def test_full_service_flow(self):
         def generate(instruction, data, schema):
@@ -142,6 +160,7 @@ class CFOTests(unittest.TestCase):
         service.get_deposits.return_value = [{"amount": 11000, "transaction_date": "2026-10-01"}]
         service.get_purchases.return_value = []
         service.get_bills.return_value = []
+        service.get_loans.return_value = []
         assistant = Mock()
         assistant.ask.return_value = {"answer": "Grounded answer", "status": "answered", "facts": [], "context": {}}
         app.dependency_overrides[get_nessie_service] = lambda: service

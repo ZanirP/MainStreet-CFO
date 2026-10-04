@@ -12,12 +12,15 @@ import type {
   ScenarioResult,
   ScenarioKind,
   OneTimeInputs,
+  Analysis,
+  LocationInputs,
 } from "../types";
 import { scenarioLabel } from "../types";
 import { currency, monthLabel } from "../format";
 import { ErrorNotice } from "./Shared";
 import DecisionLimits from "./DecisionLimits";
 import { ScenarioProjectionChart } from "./Charts";
+import LocationScenarioPanel from "./LocationScenarioPanel";
 export function HireEmployeeForm({
   busy,
   onSubmit,
@@ -195,7 +198,15 @@ function OneTimeForm({
     </form>
   );
 }
-export default function ScenarioPanel({ businessId }: { businessId: string }) {
+export default function ScenarioPanel({
+  businessId,
+  analysis,
+  onLocationResult,
+}: {
+  businessId: string;
+  analysis?: Analysis;
+  onLocationResult?: (inputs: LocationInputs | undefined) => void;
+}) {
   const [result, setResult] = useState<ScenarioResult | null>(null);
   const [kind, setKind] = useState<ScenarioKind>("hire_employee");
   const [error, setError] = useState("");
@@ -235,6 +246,7 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
     }
   }
   function changeScenario(next: ScenarioKind) {
+    onLocationResult?.(undefined);
     controller.current?.abort();
     setBusy(false);
     setResult(null);
@@ -250,6 +262,15 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
         : "Owner Withdrawal";
   const label = result ? scenarioLabel(result.scenario) : scenarioLabel(kind);
   const last = result?.cash_projection.at(-1);
+  if (kind === "open_location")
+    return (
+      <LocationScenarioPanel
+        businessId={businessId}
+        analysis={analysis}
+        onChangeScenario={changeScenario}
+        onResult={onLocationResult}
+      />
+    );
   return (
     <section className="scenario-panel" id="what-if">
       <div className="scenario-intro">
@@ -276,6 +297,7 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
             <option value="hire_employee">Hire an Employee</option>
             <option value="equipment_purchase">Equipment Purchase</option>
             <option value="owner_withdrawal">Owner Withdrawal</option>
+            <option value="open_location">Open Another Location</option>
           </select>
           <div className="scenario-choice">
             <span className="hire-icon">
@@ -422,6 +444,19 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
                 </div>
               </div>
               <ScenarioProjectionChart result={result} />
+              {result.debt_assumptions && (
+                <p className="footnote">
+                  Existing linked loan payments:{" "}
+                  {currency(
+                    result.debt_assumptions.fixed_linked_monthly_payment,
+                  )}
+                  /month. Expense adjustment versus history:{" "}
+                  {currency(
+                    result.debt_assumptions.forecast_expense_adjustment,
+                  )}
+                  /month. {result.debt_assumptions.basis}
+                </p>
+              )}
               {result.breaking_point && (
                 <DecisionLimits
                   limits={result.breaking_point}
@@ -434,7 +469,8 @@ export default function ScenarioPanel({ businessId }: { businessId: string }) {
                   <p className="footnote">
                     Positive average revenue reduced by{" "}
                     {result.stress_test.assumptions.revenue_reduction_percent}%;
-                    positive average expenses increased by{" "}
+                    positive average expenses excluding linked fixed debt
+                    payments increased by{" "}
                     {result.stress_test.assumptions.expense_increase_percent}%.{" "}
                     {result.stress_test.assumptions.basis}
                   </p>

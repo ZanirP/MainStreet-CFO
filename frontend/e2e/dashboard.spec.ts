@@ -15,6 +15,30 @@ const decisionLimits: BreakingPoint = {
 };
 // Backend-shaped fixtures remain in tests; no production demo-data fallback.
 const analysis = {
+  debt: {
+    data_available: true,
+    complete: true,
+    active_loan_count: 1,
+    reported_active_loan_amount: 18000,
+    monthly_payment_total: 600,
+    all_active_payments_linked: true,
+    payment_coverage_ratio: 12.67,
+    cash_to_monthly_payment_ratio: 40,
+    average_monthly_cash_flow_after_linked_payments: 7000,
+    forecast_expense_adjustment: 0,
+    loans: [
+      {
+        id: "loan-a",
+        type: "business",
+        status: "active",
+        description: "Demo coffee equipment loan",
+        reported_loan_amount: 18000,
+        monthly_payment: 600,
+        included_in_obligations: true,
+        payment_link_verified: true,
+      },
+    ],
+  },
   summary: {
     revenue: 66000,
     expenses: 24000,
@@ -220,6 +244,13 @@ for (const viewport of [
       page.locator(".metric-featured").getByText("$24,000.00", { exact: true }),
     ).toBeVisible();
     await expect(page.locator(".recharts-surface").first()).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Existing debt", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Demo coffee equipment loan", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("12.67×", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "See the cash impact" }).click();
     await expect(page.getByText("$2,340.00", { exact: true })).toBeVisible();
     await expect(

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, CalendarDays, RefreshCw } from "lucide-react";
 import { api } from "./api";
-import type { Analysis, Business } from "./types";
+import type { Analysis, Business, LocationInputs } from "./types";
 import { currency, monthLabel, percent } from "./format";
 import Sidebar from "./components/Sidebar";
 import {
@@ -21,6 +21,7 @@ import {
 } from "./components/FinancialDetails";
 import ScenarioPanel from "./components/ScenarioPanel";
 import AskCFO from "./components/AskCFO";
+import DebtOverview from "./components/DebtOverview";
 
 export default function Dashboard() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -32,6 +33,11 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [businessVersion, setBusinessVersion] = useState(0);
   const [version, setVersion] = useState(0);
+  const [locationContext, setLocationContext] = useState<{
+    businessId: string;
+    version: number;
+    inputs: LocationInputs;
+  } | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     setBusinessLoading(true);
@@ -225,6 +231,7 @@ export default function Dashboard() {
                       <ExpenseList analysis={analysis} />
                       <UpcomingBills analysis={analysis} />
                     </div>
+                    <DebtOverview analysis={analysis} />
                     <div className="decision-link">
                       <span>
                         <span className="tiny-spark">✦</span> What’s your next
@@ -238,10 +245,24 @@ export default function Dashboard() {
                     <ScenarioPanel
                       key={`${selected}-${version}`}
                       businessId={selected}
+                      analysis={analysis}
+                      onLocationResult={(inputs) =>
+                        setLocationContext(
+                          inputs
+                            ? { businessId: selected, version, inputs }
+                            : null,
+                        )
+                      }
                     />
                     <AskCFO
-                      key={`cfo-${selected}-${version}`}
+                      key={`cfo-${selected}-${version}-${JSON.stringify(locationContext?.inputs)}`}
                       businessId={selected}
+                      locationInputs={
+                        locationContext?.businessId === selected &&
+                        locationContext.version === version
+                          ? locationContext.inputs
+                          : undefined
+                      }
                     />
                   </>
                 )

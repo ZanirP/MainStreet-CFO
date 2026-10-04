@@ -11,6 +11,7 @@ from backend.services.nessie_service import NessieService, NessieServiceError
 class AppTests(unittest.TestCase):
     def setUp(self):
         self.service = Mock(spec=NessieService)
+        self.service.get_loans.return_value = []
         app.dependency_overrides[get_nessie_service] = lambda: self.service
         self.addCleanup(app.dependency_overrides.clear)
         self.client = TestClient(app)
@@ -166,7 +167,7 @@ class AppTests(unittest.TestCase):
             self.assertIn("negative_within_horizon", result["breaking_point"])
             self.assertEqual(result["stress_test"]["assumptions"]["revenue_reduction_percent"], 10)
             self.assertEqual(self.client.post(path, json={**body, "stress_test": "true"}).status_code, 422)
-        self.assertEqual(len(self.client.get("/businesses/c/analysis").json()["signals"]), 5)
+        self.assertIn("debt_payments", {signal["id"] for signal in self.client.get("/businesses/c/analysis").json()["signals"]})
 
 
 if __name__ == "__main__":

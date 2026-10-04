@@ -1,16 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, MessageCircle, Send } from "lucide-react";
 import { api } from "../api";
-import type { CFOAnswer } from "../types";
+import type { CFOAnswer, LocationInputs } from "../types";
 
 const suggestions = [
+  "Is my current debt manageable?",
   "What is my biggest financial risk right now?",
   "Can I afford to hire someone at $20/hour for 30 hours a week?",
   "Can I afford a $10,000 espresso machine?",
   "How much cash should I have after six months?",
 ];
 
-export default function AskCFO({ businessId }: { businessId: string }) {
+export default function AskCFO({
+  businessId,
+  locationInputs,
+}: {
+  businessId: string;
+  locationInputs?: LocationInputs;
+}) {
   const [question, setQuestion] = useState("");
   const [submitted, setSubmitted] = useState("");
   const [answer, setAnswer] = useState<CFOAnswer | null>(null);
@@ -30,7 +37,14 @@ export default function AskCFO({ businessId }: { businessId: string }) {
     setError("");
     setLoading(true);
     try {
-      const result = await api.askCFO(businessId, text.trim(), request.signal);
+      const result = locationInputs
+        ? await api.askCFO(
+            businessId,
+            text.trim(),
+            request.signal,
+            locationInputs,
+          )
+        : await api.askCFO(businessId, text.trim(), request.signal);
       if (!request.signal.aborted) setAnswer(result);
     } catch (e) {
       if (!request.signal.aborted)
@@ -60,7 +74,16 @@ export default function AskCFO({ businessId }: { businessId: string }) {
         <span className="small-tag">Powered by Gemini</span>
       </div>
       <div className="cfo-suggestions" aria-label="Suggested CFO questions">
-        {suggestions.map((text) => (
+        {(locationInputs
+          ? [
+              "Can I afford to open another location?",
+              "What's the biggest risk with this expansion?",
+              "How much revenue does the new location need?",
+              "Is paying cash or financing safer for my cash position?",
+              "What happens if sales are weaker than expected?",
+            ]
+          : suggestions
+        ).map((text) => (
           <button
             type="button"
             className="secondary-button"
@@ -73,6 +96,13 @@ export default function AskCFO({ businessId }: { businessId: string }) {
           </button>
         ))}
       </div>
+      {locationInputs && (
+        <p className="footnote">
+          Using your last Open Another Location assumptions. The backend
+          refreshes current business data and recalculates the projection for
+          each question. Edit and rerun the scenario to change assumptions.
+        </p>
+      )}
       <form
         onSubmit={(event) => {
           event.preventDefault();

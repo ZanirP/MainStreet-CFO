@@ -9,7 +9,8 @@ previous successful smoke test. Keep `.env` ignored by Git.
 Methods return parsed JSON (including POST response envelopes). HTTP failures,
 network failures, and invalid JSON raise `NessieServiceError`; HTTP errors have
 `status_code`. Error messages omit response bodies and authenticated URLs.
-Requests have a 15-second timeout and do not follow redirects.
+Requests have a 15-second timeout and do not follow redirects. Successful
+empty account-deletion responses return `None`.
 
 Routes and bodies were verified on October 3, 2026 against the
 [official OpenAPI specification](https://nessieisreal.com/nessie-openapi-spec.yaml).
@@ -23,7 +24,7 @@ payload validation.
 | `get_customers`, `create_customer` | `/customers` | `first_name`, `last_name`, `address` |
 | `get_customer` | `/customers/{customer_id}` | — |
 | `get_customer_accounts`, `create_account` | `/customers/{customer_id}/accounts` | `type`, `nickname`, `rewards`, `balance` |
-| `get_account` | `/accounts/{account_id}` | — |
+| `get_account`, `delete_account` | `/accounts/{account_id}` (GET / DELETE) | — |
 | `get_purchases`, `create_purchase` | `/accounts/{account_id}/purchases` | `merchant_id`, `medium`, `purchase_date`, `amount`, `status`, `description` |
 | `get_deposits`, `create_deposit` | `/accounts/{account_id}/deposits` | `medium`, `transaction_date`, `status`, `amount`, `description` |
 | `get_bills`, `create_bill` | `/accounts/{account_id}/bills` | `status`, `payee`, `payment_amount`; optional `nickname`, `payment_date`, `recurring_date` |
@@ -83,9 +84,10 @@ analysis = FinancialAnalyzer().analyze_business(
 )
 ```
 
-All inputs default to empty lists. The result contains `summary`,
+Transaction inputs default to empty lists; omitted `loans` mean unavailable debt
+data, while `loans=[]` means no loans were returned. The result contains `summary`,
 `expense_breakdown`, `largest_expenses`, `monthly_revenue`, `monthly_expenses`,
-`trends`, `recurring_bills`, and `health`. Money and percentages are numeric,
+`trends`, `recurring_bills`, `health`, `signals`, and `debt`. Money and percentages are numeric,
 rounded to two decimal places; internal sums use decimal arithmetic.
 
 Calculation conventions:
@@ -229,55 +231,231 @@ Open `http://127.0.0.1:5173`. The browser uses only the FastAPI backend.
 Businesses and all financial results come from the backend. Empty customer
 lists show an empty state; hiring projections need dated monthly history.
 
-## Seed the Arbor Coffee demo
+## Seed three contrasting demo businesses
 
-From the repository root, with the existing `.env` configured:
+The deterministic May–September 2026 plan uses customer names and explicitly
+fictional Ann Arbor addresses, checking accounts, real Nessie merchant IDs,
+multiple unequal sales deposits, supplier invoices, completed historical bills,
+and separate October recurring obligations. No financial conclusions or CFO
+answers are stored in the seed data.
 
-```sh
-.venv/bin/python scripts/seed_nessie.py
-```
+| Business | Monthly net cash flow, May → September | Economic opening cash | Current cash target | Deposits / purchases / bills |
+| --- | --- | --- | --- | --- |
+| Arbor Coffee Co. | −$3,000; −$1,500; +$500; +$2,000; +$1,500 | $9,500 | $9,000 | 30 / 75 / 42 |
+| MainStreet Market | +$4,000; +$2,000; $0; −$2,000; −$5,000 | $16,000 | $15,000 | 30 / 51 / 42 |
+| Pixel Palace Arcade | +$11,000; +$9,000; +$12,000; +$11,000; +$12,000 | $30,000 | $85,000 | 40 / 44 / 48 |
 
-Preview without making API requests:
+Arbor's card/catering sales grow while early losses leave little cash; September
+includes a $1,750 espresso-machine repair. Market's wholesale inventory rises
+from $21,000 to $23,500 and refrigeration utilities from $1,200 to $2,200 while
+sales decline. Produce orders decrease, so costs do not all move together.
+Waste disposal is a cash service expense, not a second charge for lost stock.
+Pixel Palace has fluctuating admissions, parties and concessions sales, healthy
+net cash generation and a $2,400 cabinet repair in July.
+
+Historical payroll, rent, utilities, insurance and software payments are
+completed bills and count toward expenses. October recurring bills are excluded
+from realized historical totals. Purchases describe actual supplier payments;
+merchant IDs are resolved by vendor name through `get_merchants()` or
+`create_merchant()`. Fictional demo suppliers are never replaced with an
+unrelated first merchant or fabricated IDs. Internal planning fields are removed
+before sending supported Nessie payloads.
+
+Preview **without Nessie or Gemini requests**, including monthly/category figures,
+opening/current cash, record counts, derived signals and a standard hire:
 
 ```sh
 .venv/bin/python scripts/seed_nessie.py --dry-run
 ```
 
-The script creates the customer as `first_name: "Arbor"`,
-`last_name: "Coffee Co."`, with an explicitly fictional Ann Arbor address.
-It creates a Checking account with a $26,000 balance, then 25 deposits,
-35 purchases, and 36 bills. The history covers May–September 2026 and exactly
-matches the requested monthly revenue and realized-expense targets. Historical
-bills include existing staff payroll alongside rent, utilities, internet,
-insurance, and POS software; six separate recurring bills are dated in October.
-The average monthly baseline is $6,340, reduced to $4,000 by an $18/hour,
-30-hour/week hire. Projection labels begin in October after September history.
-
-Payloads use the documented customer, account, deposit, and bill fields from
-[Nessie's OpenAPI specification](https://nessieisreal.com/nessie-openapi-spec.yaml).
-Purchases use the [official SDK contract](https://github.com/nessieisreal/nessie-javascript-sdk/blob/master/lib/purchase.js),
-including a real merchant ID. The only new service operations are
-`get_merchants()` and `create_merchant()`, using the documented `/merchants`
-route. An existing merchant is reused; a minimal demo supplier is created if
-none are available.
-
-The customer ID is printed for testing `/businesses/{customer_id}/analysis`.
-A second run detects Arbor Coffee and stops without creating additional
-records. Run only one seed process at a time. A failure can leave partial data;
-the script does not blindly retry writes or automatically delete records.
-Inspect partial records before making changes.
-
-The script reads the account balance back after seeding and checks the
-$24,000–$28,000 target. The public contract does not specify historical
-transaction balance side effects. If Nessie changes the balance outside that
-range, the script reports a failure rather than claiming a successful seed or
-inventing unsupported balance-update fields.
-
-Offline seed checks:
+For a fresh API dataset, seed all three:
 
 ```sh
-.venv/bin/python -m unittest test_seed_nessie test_nessie_service
+.venv/bin/python scripts/seed_nessie.py
 ```
+
+To migrate the existing Arbor dataset, explicitly rebuild mismatched **recognized
+demo operating accounts** while retaining the customer IDs:
+
+```sh
+.venv/bin/python scripts/seed_nessie.py --replace-existing
+```
+
+This flag deletes and recreates only accounts with the known demo nickname and
+matching fictional customer address. Complete matching datasets remain untouched,
+even with the flag. Other accounts, ambiguous populated duplicate customers, or
+matching names at different addresses cause a stop before writes. The old
+empty duplicate Arbor customer, if present, is preserved; the populated customer
+is reused. Use the printed customer IDs to select the seeded businesses.
+
+All payload fields, counts, statuses, dates, amounts and final cash are read back
+and verified. A rerun verifies a complete dataset without adding records. A
+partial or changed dataset is refused unless replacement is explicit. Run one
+seed process at a time; writes are not transactional and are not blindly retried.
+An API rejection identifies the business, record type and index without exposing
+keys, authenticated URLs, or response bodies.
+
+**Balance assumptions:** economic opening cash + May–September net = current
+cash, with no owner draws, debt flows or other unmodeled financing during this
+history. Default `--balance-mode snapshot` creates the account at the **current**
+cash target, since existing Nessie deposit/purchase history was observed to leave
+the stored balance unchanged. This is a current banking snapshot, distinct from
+the inferred economic opening cash. If the API applies completed postings to
+balances, use `--balance-mode ledger`, which creates accounts at economic opening
+cash and posts records chronologically. Both modes require the exact final cash
+target; neither adds artificial balancing revenue/expenses or attempts an
+unsupported balance update. A mismatch reports failure and requires inspection
+before an explicit rebuild with the appropriate mode.
+
+Contracts were rechecked against the
+[official OpenAPI specification](https://nessieisreal.com/nessie-openapi-spec.yaml)
+and [official purchase SDK](https://github.com/nessieisreal/nessie-javascript-sdk/blob/master/lib/purchase.js).
+The service's new `delete_account()` uses documented `DELETE /accounts/{id}`
+only for explicit demo replacement, accepting successful empty responses.
+
+Optional filters and live CFO validation:
+
+```sh
+.venv/bin/python scripts/seed_nessie.py --business market --dry-run
+.venv/bin/python scripts/seed_nessie.py --replace-existing --validate-cfo
+```
+
+`--validate-cfo` reads the actual seeded accounts/transactions, runs the normal
+analyzer, and asks Gemini **the same question** for each business: “Is my current
+debt manageable?” It requires the backend `GEMINI_API_KEY`.
+Missing model availability does not roll back a successful seed. The CFO context
+now includes deterministic dated monthly net cash flow and margins, allowing
+recent recovery/deterioration to be explained without model arithmetic. No
+business-specific responses or risk labels are hardcoded. Expense categories
+remain the analyzer's source-based `Purchases`/`Bills`; descriptions and large
+supplier payments supply inventory evidence, not an invented category taxonomy.
+
+Forecasts still average the entire supplied history, rather than extrapolating
+the latest month. For example, Market's baseline is −$200/month despite September's
+−$5,000 net; Arbor averages −$100 despite recent profitability. Pixel Palace
+averages +$11,000. These differing inputs naturally produce different scenario
+and stress-test results; they do not constitute predictions that the trends
+will continue. The existing expense-rise signal may flag Pixel's modest expense
+increase even though its cash cushion and cash flow are healthy.
+
+Offline checks:
+
+```sh
+.venv/bin/python -m unittest discover
+```
+
+## Existing loans and debt-aware decisions
+
+`NessieService.get_loans(account_id)` and `create_loan(account_id, payload)` use
+`GET` and `POST /accounts/{id}/loans`, verified against the
+[official Nessie OpenAPI specification](https://nessieisreal.com/nessie-openapi-spec.yaml).
+The POST body requires `type`, `status`, `credit_score`, `monthly_payment`,
+`amount`, and `description`. Payment and amount are integers in that schema.
+GET also returns `_id` and server-generated `creation_date`. Type and status
+are documented as strings without enums; MainStreet explicitly interprets
+`active` as an ongoing obligation, closed/paid/cancelled as inactive, and other
+statuses as unresolved. None of these imply credit approval.
+
+All analysis, scenario and CFO endpoints retrieve loans for every supplied
+account through the same loader. Upstream loan failures return a sanitized
+HTTP error instead of silently treating a business as debt-free. Direct analyzer
+callers can supply `loans=[]` for a verified empty list; omitting loans means
+unavailable information. Unknown/invalid loan amounts and statuses are flagged
+as incomplete, and known-value totals must not be interpreted as complete debt.
+
+Nessie calls `amount` the **amount of the loan**, without specifying remaining
+principal. MainStreet displays **reported loan amount**; outstanding/payoff
+balance, APR, interest cost, remaining term and amortization are unavailable.
+Monthly payment is a cash obligation, not an interest-cost estimate. Principal
+is never subtracted from historical expenses or current cash. The required demo
+`credit_score=700` is synthetic API metadata, never credit eligibility evidence,
+and is omitted from dashboard and CFO context.
+
+| Demo | Reported loan amount | Monthly payment | Purpose |
+| --- | --- | --- | --- |
+| Arbor Coffee Co. | $48,000 | $1,200 | Startup buildout and espresso equipment |
+| MainStreet Market | $90,000 | $1,800 | Store fixtures and refrigeration |
+| Pixel Palace Arcade | $18,000 | $600 | Arcade cabinet equipment |
+
+Each business has one active demo loan, five completed payment bills and an
+October recurring payment bill. The existing operating budget is reallocated
+between payroll and these debt payments; monthly revenue, total cash expenses,
+historical net cash flow, and cash targets remain exactly unchanged. No new loan
+disbursement is represented as earned sales. Nessie's record creation date is
+not used to invent a loan origination date or a repayment term.
+
+**Payment reconciliation:** Nessie has no bill-to-loan foreign key. This app
+uses the explicit convention `nickname = "Debt payment: <loan description>"`.
+A unique exact description on the same account, plus exactly one recurring bill
+whose amount equals `monthly_payment`, verifies the link. Amount or lender-name
+similarity alone is insufficient. The HTTP loader attaches local account
+provenance to scope links; it never sends these local fields to Nessie.
+Unlinked payment inclusion remains unknown. Such payments may already occur in
+untagged expenses, so projections leave them unchanged and disclose the gap.
+The conservative obligation exposure sums listed bills plus unlinked payments;
+it may overlap and is explicitly not a verified total payable.
+
+With verified links, projections remove the average historical linked payment
+from cash expenses and add the current linked monthly payment **once**. With the
+demo's constant payments this preserves the original default projections; a
+changed current payment deterministically changes every scenario's baseline.
+Stress keeps linked payments fixed and increases only the other positive cash
+expenses. Break-even hiring capacity, revenue requirements, cash buffers and
+runway use those same adjusted expenses and existing projection calculations.
+Keeping payments constant throughout the horizon is an explicit assumption;
+no payoff or new borrowing is inferred.
+
+Debt signals and the compact dashboard section show cash-flow payment coverage
+(cash flow before linked payments / monthly payments), remaining flow, and
+known obligations. This is not a lender DSCR calculation or an approval rule.
+Five-month average coverage is 0.92× / 0.89× / 19.33× for Arbor / Market / Pixel;
+the latest-month coverage is 2.25× / −1.78× / 21×. The distinction matters:
+Arbor's latest cash flow has recovered, Market's has deteriorated, and Pixel's
+strong cash generation supports a much larger cushion. These conclusions follow
+from common deterministic calculations, without company-specific risk rules.
+
+Ask Your CFO includes `existing_debt` as current/historical source facts, with
+missing terms explicitly null, separate from engine projections and hypothetical
+decision assumptions. Gemini receives backend-calculated amounts and ratios,
+uses the same numeric citation validation, and is instructed never to infer
+interest, offers, credit approval or future financing eligibility.
+
+Preview, migrate the recognized older demo accounts, and optionally validate
+Gemini answers against real read-back data (commands from the repository root):
+
+```sh
+.venv/bin/python scripts/seed_nessie.py --dry-run
+.venv/bin/python scripts/seed_nessie.py --replace-existing --validate-cfo
+.venv/bin/python -m unittest discover
+npm --prefix frontend test
+npm --prefix frontend run build
+npm --prefix frontend run test:e2e
+```
+
+The v3 debt seed recognizes v2 and original demo account nicknames. Replacement
+requires the explicit flag, keeps customer IDs, and rebuilds only owned demo
+accounts. Matching complete loan/transaction records and cash are verified and
+skipped even with the flag; changed or partial loan records are never appended.
+Dry-run stays API-free even with `--validate-cfo`. A failed POST or read-back
+leaves a clearly reported partial account, rather than claiming seed success.
+
+Nessie's live Bill endpoint has a readback inconsistency: a completed bill POST
+without `recurring_date` succeeds, but `GET /accounts/{id}/bills` can return HTTP
+400 with missing `recurring_date` and `upcoming_payment_date` validation errors.
+The seed's historical bills are monthly obligations, so each now includes its
+actual day-of-month in the supported `recurring_date` field while retaining
+`status=completed` and the original payment date/amount. Nessie generates the
+upcoming date; it is not an invented POST field. This was confirmed with an
+isolated completed-bill POST/readback and cleanup on the live API.
+
+Older accounts affected by this exact error are unreadable and need the explicit
+`--replace-existing` flag to rebuild the recognized demo account. The seed only
+recovers from the exact observed two-field response-validation error; other 400s,
+authentication failures, rate limits and network errors stop without deletion.
+Completed verified datasets remain skipped on repeat runs. Service errors report
+the HTTP method and route with resource IDs masked, never authenticated URLs,
+API keys or upstream response bodies. `--validate-cfo` runs only after all seed
+verification succeeds; it directly calls the analyzer/CFO service, not FastAPI.
 
 ## One-time scenarios
 
@@ -346,7 +524,8 @@ normal chart, reusing the same chart component.
 ```
 
 The conservative case lowers positive average monthly revenue by 10% and raises
-positive average monthly expenses by 10%, using the same complete historical
+positive average monthly expenses **excluding explicitly linked fixed loan
+payments** by 10%, using the same complete historical
 calendar span as the normal scenario. Nonpositive signed averages remain
 unchanged so credits cannot accidentally improve the stress projection. Hiring
 wages and one-time cash reductions remain unchanged. Starting cash and month
@@ -366,15 +545,15 @@ remain unchanged. The dashboard displays these under **Breaking Point**.
 
 Hiring limits use the same historical monthly averages as the projection:
 
-- Required monthly revenue = operating expenses + monthly employee cost.
-- Maximum employee cost = revenue − operating expenses. A negative baseline
+- Required monthly revenue = cash expenses including linked debt + monthly employee cost.
+- Maximum employee cost = revenue − cash expenses including linked debt. A negative baseline
   returns `null` because even zero additional cost cannot break even.
 - Maximum hourly wage = maximum employee cost × 12 / (weekly hours × 52).
   Zero weekly hours produces no finite wage ceiling (`null`). Maximums round
   down to cents; required revenue rounds up.
 
 For equipment and withdrawals, the explicitly labeled buffer assumption is one
-month of positive average operating expenses. The maximum one-time amount keeps
+month of positive average cash expenses including linked debt. The maximum one-time amount keeps
 that buffer both immediately after the decision and throughout the chosen horizon:
 `cash + min(0, baseline_monthly_cash_flow × months) − buffer`. A negative capacity
 returns `null` (the buffer is already unattainable). This illustrative assumption
@@ -457,4 +636,95 @@ uvicorn backend.app:app --reload
 ```bash
 cd frontend
 npm run dev
+```
+## Open Another Location
+
+Choose **Open Another Location** in the decision panel. The workflow reuses the
+existing projections, stress charts, current debt handling, and Ask Your CFO.
+It never creates a customer, account, transaction, or loan in Nessie.
+
+Starting estimates come from dated, realized financial history: monthly revenue
+and rent, payroll, utilities, inventory/supplies, and other operating costs.
+Description keywords group expenses; insurance, internet, and POS subscriptions
+fall into other costs. Verified current loan-payment bills are excluded from
+these operating estimates. Missing categories remain blank, requiring an
+explicit entry rather than implying zero. The expandable source detail explains
+the history used. These are current-business reference amounts, not promises
+about a new location. Every scenario assumption remains editable.
+
+The backend accepts `POST /businesses/{customer_id}/scenarios/location`:
+
+```json
+{
+  "upfront_cost": 30000,
+  "monthly_revenue": 20000,
+  "rent": 3000,
+  "payroll": 7000,
+  "utilities": 750,
+  "inventory": 4000,
+  "other": 1250,
+  "ramp_months": 3,
+  "months": 6,
+  "financing_amount": 28000,
+  "annual_interest_percent": 8,
+  "financing_term_months": 60,
+  "stress_test": true
+}
+```
+
+Opening cash equals current cash minus upfront cost plus hypothetical financing.
+All additional operating costs start in month one. Additional revenue ramps
+linearly: mature revenue times `min(month / ramp_months, 1)`. Existing business
+cash flow uses the shared historical baseline and counts verified current debt
+once. Hypothetical financing uses fixed-payment amortization, or principal
+divided by term for zero interest. Payments stop after the entered term. The
+response includes monthly cash and operations, mature cash flow, a cash-funded
+comparison, lowest cash point, first negative month, and decision limits.
+
+Decision limits distinguish standalone location break-even from combined
+business break-even, identify revenue downside headroom, and solve the minimum
+mature revenue needed to preserve a buffer throughout the ramp. The buffer is
+explicitly an illustrative one month of combined cash expenses. If cash already
+falls below that buffer at opening, later revenue cannot preserve it from the
+start. Runway is interpolated only when depletion occurs within the selected
+horizon; an absent value does not imply indefinite safety. Stress reduces both
+existing and new revenue by 10% and increases operating costs by 10%, keeping
+opening cost and debt payments fixed.
+
+Existing Nessie loans are current facts. Scenario financing is hypothetical:
+the entered principal, interest, and term imply no offer, eligibility, or
+approval. The UI's 8%/60-month financing defaults are visibly labeled editable
+assumptions. No fees, tax effects, seasonality, cannibalization, opening delays,
+or additional working-capital needs are modeled.
+
+After simulation, Ask Your CFO receives the selected scenario inputs. FastAPI
+recomputes the projection from fresh business analysis and separates current
+facts, scenario assumptions, and calculated projections before Gemini explains
+them. Browser-supplied projection totals are never trusted. Editing inputs or
+switching businesses clears the previous scenario context. Without a completed
+expansion simulation, the CFO requests missing assumptions rather than guessing.
+
+To demo locally, run these in separate terminals from the repository root:
+
+```sh
+.venv/bin/python -m uvicorn backend.app:app --reload
+npm --prefix frontend run dev
+```
+
+Select the populated Arbor Coffee business, choose Open Another Location, and
+enter the example above. First disable financing, then enable $28,000 at the
+explicitly assumed 8% for 60 months. With the verified Arbor snapshot of $9,000
+cash, cash funding starts at -$21,000; financing starts at $7,000 but still dips
+to about -$6,335 during the ramp. Its hypothetical monthly payment is $567.74.
+Inspect the cash-funded comparison, stress chart, and decision limits, then ask
+“What's the biggest risk with this expansion?” Actual outputs change when the
+underlying business data changes.
+
+Regression checks:
+
+```sh
+.venv/bin/python -m unittest discover -q
+npm --prefix frontend test
+npm --prefix frontend run build
+npm --prefix frontend run test:e2e
 ```
