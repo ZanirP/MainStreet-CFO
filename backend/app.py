@@ -6,7 +6,8 @@ from typing import Any
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.services.financial_analyzer import FinancialAnalyzer
@@ -191,3 +192,24 @@ def equipment_scenario(customer_id: str, inputs: OneTimeScenarioRequest,
 def withdrawal_scenario(customer_id: str, inputs: OneTimeScenarioRequest,
                         service: NessieService = Depends(get_nessie_service)) -> dict[str, Any]:
     return _one_time_scenario(customer_id, inputs, service, "withdrawal")
+
+
+
+FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+# Vite's generated JS/CSS
+app.mount(
+    "/assets",
+    StaticFiles(directory=FRONTEND_DIST / "assets"),
+    name="assets"
+)
+
+# React SPA fallback — KEEP THIS AFTER YOUR API ROUTES
+@app.get("/{full_path:path}")
+async def serve_react(full_path: str):
+    file_path = FRONTEND_DIST / full_path
+
+    if full_path and file_path.is_file():
+        return FileResponse(file_path)
+
+    return FileResponse(FRONTEND_DIST / "index.html")
