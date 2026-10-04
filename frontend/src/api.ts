@@ -10,7 +10,7 @@ import type {
   LocationResult,
 } from "./types";
 const BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+  import.meta.env.VITE_API_BASE_URL || ""
 ).replace(/\/$/, "");
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
